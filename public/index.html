@@ -532,11 +532,12 @@ function addItem(){
   const id=uid(), now=new Date();
   calSt[id]={year:now.getFullYear(),month:now.getMonth(),blocked:{}};
   items.push({id,name:'',desc:'',terms:'',price:'',per:'/ day',contact:'',status:'available',imgSrc:''});
-  switchTab('inq'); // ensure listings tab is visible
+  switchTab('inq');
   render();
+  saveData();
   setTimeout(()=>{const c=document.getElementById('card-'+id);if(c)c.scrollIntoView({behavior:'smooth',block:'center'});},80);
 }
-function deleteItem(id){ if(!confirm('Remove this listing?'))return; items=items.filter(i=>i.id!==id); delete calSt[id]; render(); }
+function deleteItem(id){ if(!confirm('Remove this listing?'))return; items=items.filter(i=>i.id!==id); delete calSt[id]; render(); saveData(); }
 
 /* ── RENDER ── */
 function render(){
@@ -561,7 +562,7 @@ function creatorCard(item){
   // image
   const imgWrap=mk('div','card-img');
   const fi=mk('input'); fi.type='file'; fi.accept='image/*'; fi.style.display='none';
-  fi.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{item.imgSrc=ev.target.result;render();};r.readAsDataURL(f);};
+  fi.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{item.imgSrc=ev.target.result;render();saveData();};r.readAsDataURL(f);};
   if(item.imgSrc){
     const img=mk('img'); img.src=item.imgSrc; img.onclick=()=>openLb(item.imgSrc); imgWrap.appendChild(img);
     const ch=mk('div','change-photo'); ch.textContent='Change photo'; ch.onclick=()=>fi.click(); imgWrap.appendChild(ch);
@@ -574,27 +575,27 @@ function creatorCard(item){
   const sts=['available','partial','unavailable'], lbs={available:'✓ Available',partial:'~ Partial',unavailable:'✗ Unavailable'};
   const badge=mk('div','badge '+(item.status||'available')+' click');
   badge.textContent=lbs[item.status||'available']; badge.title='Click to cycle';
-  badge.onclick=()=>{const i=sts.indexOf(item.status||'available');item.status=sts[(i+1)%3];badge.className='badge '+item.status+' click';badge.textContent=lbs[item.status];};
+  badge.onclick=()=>{const i=sts.indexOf(item.status||'available');item.status=sts[(i+1)%3];badge.className='badge '+item.status+' click';badge.textContent=lbs[item.status];saveData();};
   imgWrap.appendChild(badge); card.appendChild(imgWrap);
 
   // body
   const body=mk('div','card-body');
   const ni=mk('input'); ni.className='e-name'; ni.type='text'; ni.placeholder='Item name…'; ni.value=item.name||'';
-  ni.oninput=()=>{item.name=ni.value;}; body.appendChild(ni);
+  ni.oninput=()=>{item.name=ni.value;saveData();}; body.appendChild(ni);
   body.appendChild(taField('Description','What is it? Condition, size, features…',item,'desc'));
   body.appendChild(taField('Rental Terms','Deposit, min days, pick-up only, etc…',item,'terms'));
 
   const pw=mk('div'); pw.innerHTML='<label class="flabel">Price</label>';
   const pr=mk('div','price-row'); pr.innerHTML='<span class="pfix">$</span>';
   const pi=mk('input'); pi.type='number'; pi.className='e-price'; pi.placeholder='0.00'; pi.min='0'; pi.step='0.01'; pi.value=item.price||'';
-  pi.oninput=()=>{item.price=pi.value;};
+  pi.oninput=()=>{item.price=pi.value;saveData();};
   const ps=mk('select','e-per');
   ['/ day','/ week','/ month','/ event','flat rate'].forEach(o=>{const op=mk('option');op.value=o;op.textContent=o;if(item.per===o)op.selected=true;ps.appendChild(op);});
-  ps.onchange=()=>{item.per=ps.value;}; pr.appendChild(pi); pr.appendChild(ps); pw.appendChild(pr); body.appendChild(pw);
+  ps.onchange=()=>{item.per=ps.value;saveData();}; pr.appendChild(pi); pr.appendChild(ps); pw.appendChild(pr); body.appendChild(pw);
 
   const cw=mk('div'); cw.innerHTML='<label class="flabel">Contact / Booking Link</label>';
   const ci=mk('input','e-contact'); ci.type='text'; ci.placeholder='email, phone, or URL…'; ci.value=item.contact||'';
-  ci.oninput=()=>{item.contact=ci.value;}; cw.appendChild(ci); body.appendChild(cw);
+  ci.oninput=()=>{item.contact=ci.value;saveData();}; cw.appendChild(ci); body.appendChild(cw);
   card.appendChild(body);
 
   card.appendChild(calSection(id,true));
@@ -725,6 +726,7 @@ function drawCal(id,editable,popup){
         if(allBlocked){ realDays.forEach(rd=>delete cs.blocked[rd.key]); }
         else { realDays.forEach(rd=>{cs.blocked[rd.key]=true;}); }
         drawCal(id,editable,popup);
+        saveData();
       };
       grid.appendChild(wkBtn);
     } else {
@@ -741,7 +743,7 @@ function drawCal(id,editable,popup){
       de.textContent=rd.d;
       if(editable){
         de.title=blocked?'Mark available':'Mark unavailable';
-        de.onclick=()=>{if(!cs.blocked)cs.blocked={};cs.blocked[rd.key]?delete cs.blocked[rd.key]:(cs.blocked[rd.key]=true);drawCal(id,editable,popup);};
+        de.onclick=()=>{if(!cs.blocked)cs.blocked={};cs.blocked[rd.key]?delete cs.blocked[rd.key]:(cs.blocked[rd.key]=true);drawCal(id,editable,popup);saveData();};
       }
       grid.appendChild(de);
     });
@@ -971,23 +973,20 @@ function submitInq(id,btnEl){
 
   btnEl.disabled=true; btnEl.textContent='Sending…';
 
-  // Fire email notification to server (non-blocking — doesn't affect UX if it fails)
-  fetch('/api/inquiry',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      name,
-      phone:phoneVal,
-      email,
-      itemName:item?item.name||'Unnamed Item':'Unknown Item',
-      dates:datesStr,
-      cost,
-      msg
-    })
-  }).catch(()=>{}); // silently ignore network errors
-
   setTimeout(()=>{
-    inquiries.unshift({id:uid(),itemId:id,itemName:item?item.name||'Unnamed Item':'Unknown Item',name,phone:phoneVal,email,dates:datesStr,dateStart:new Date(rp.start),dateEnd:new Date(rp.end),cost,msg,time:new Date(),isNew:true,accepted:false});
+    const newInq={id:uid(),itemId:id,itemName:item?item.name||'Unnamed Item':'Unknown Item',name,phone:phoneVal,email,dates:datesStr,dateStart:new Date(rp.start),dateEnd:new Date(rp.end),cost,msg,time:new Date(),isNew:true,accepted:false};
+    inquiries.unshift(newInq);
+    // Save state + send notification email in one call
+    fetch('/api/inquiry',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name,phone:phoneVal,email,
+        itemName:item?item.name||'Unnamed Item':'Unknown Item',
+        dates:datesStr,cost,msg,
+        storeData:{items,calSt,inquiries,rentals,videos}
+      })
+    }).catch(()=>{});
     document.getElementById('sent-overlay').classList.add('open');
     ['inq-name-','inq-phone-','inq-email-','inq-msg-'].forEach(p=>{const el=document.getElementById(p+id);if(el){el.value='';el.classList.remove('field-err');}});
     rp.start=null; rp.end=null;
@@ -1046,6 +1045,7 @@ function acceptInquiry(inqId){
 
   renderInqPanel();
   renderRentalsTab();
+  saveData();
   const calPopup=document.querySelector('#grid #card-'+inq.itemId+' .cal-popup');
   if(calPopup&&calPopup.classList.contains('open')) drawCal(inq.itemId, true, calPopup);
 }
@@ -1055,6 +1055,7 @@ function addVideo(){
   const id=uid();
   videos.push({id,title:'',src:''});
   renderVideoGrid();
+  saveData();
 }
 
 function renderVideoGrid(){
@@ -1075,7 +1076,7 @@ function renderVideoGrid(){
     fileInp.onchange=e=>{
       const f=e.target.files[0]; if(!f) return;
       const r=new FileReader();
-      r.onload=ev=>{v.src=ev.target.result; renderVideoGrid(); renderRenterVideos();};
+      r.onload=ev=>{v.src=ev.target.result; renderVideoGrid(); renderRenterVideos(); saveData();};
       r.readAsDataURL(f);
     };
 
@@ -1097,9 +1098,9 @@ function renderVideoGrid(){
 
     const body=mk('div','video-body');
     const titleInp=mk('input','video-title-inp'); titleInp.type='text'; titleInp.placeholder='Video title…'; titleInp.value=v.title||'';
-    titleInp.oninput=()=>{v.title=titleInp.value; renderRenterVideos();};
+    titleInp.oninput=()=>{v.title=titleInp.value; renderRenterVideos(); saveData();};
     const removeBtn=mk('button','video-remove-btn'); removeBtn.textContent='Remove video';
-    removeBtn.onclick=()=>{videos=videos.filter(x=>x.id!==v.id); renderVideoGrid(); renderRenterVideos();};
+    removeBtn.onclick=()=>{videos=videos.filter(x=>x.id!==v.id); renderVideoGrid(); renderRenterVideos(); saveData();};
     body.appendChild(titleInp); body.appendChild(removeBtn);
     card.appendChild(body);
     grid.appendChild(card);
@@ -1169,7 +1170,7 @@ function renderInqPanel(){
 function clearAllInq(){
   if(!inquiries.length) return;
   if(!confirm('Clear all inquiries?')) return;
-  inquiries=[]; renderInqPanel();
+  inquiries=[]; renderInqPanel(); saveData();
 }
 
 function isCompleted(r){
@@ -1288,12 +1289,14 @@ function updateRental(id, field, value){
   else if(field==='amtPaid') r[field]=parseFloat(value)||0;
   else r[field]=value;
   renderRentalsTab();
+  saveData();
 }
 
 function removeRental(id){
   if(!confirm('Remove this rental record?')) return;
   rentals=rentals.filter(r=>r.id!==id);
   renderRentalsTab();
+  saveData();
 }
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1316,7 +1319,7 @@ function mk(tag,cls){const e=document.createElement(tag);if(cls)e.className=cls;
 function taField(label,ph,item,key){
   const w=mk('div');w.innerHTML=`<label class="flabel">${label}</label>`;
   const ta=mk('textarea','e-area');ta.placeholder=ph;ta.rows=3;ta.value=item[key]||'';
-  ta.oninput=()=>{item[key]=ta.value;};w.appendChild(ta);return w;
+  ta.oninput=()=>{item[key]=ta.value;saveData();};w.appendChild(ta);return w;
 }
 
 function getPendingKeys(itemId){
@@ -1333,7 +1336,46 @@ function getPendingKeys(itemId){
   return keys;
 }
 
-applyMode();
+/* ═══════════════════════════
+   PERSISTENCE
+═══════════════════════════ */
+let saveTimer = null;
+
+function saveData() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, calSt, inquiries, rentals, videos })
+      });
+    } catch(e) { console.warn('Auto-save failed:', e); }
+  }, 1500);
+}
+
+async function loadData() {
+  try {
+    const res  = await fetch('/api/data');
+    const data = await res.json();
+    if (data.ok) {
+      items     = data.items     || [];
+      calSt     = data.calSt     || {};
+      inquiries = data.inquiries || [];
+      rentals   = data.rentals   || [];
+      videos    = data.videos    || [];
+      inquiries.forEach(inq => {
+        if (inq.dateStart) inq.dateStart = new Date(inq.dateStart);
+        if (inq.dateEnd)   inq.dateEnd   = new Date(inq.dateEnd);
+        if (inq.time)      inq.time      = new Date(inq.time);
+      });
+      rentals.forEach(r => { if (r.time) r.time = new Date(r.time); });
+    }
+  } catch(e) { console.warn('Could not load data:', e); }
+  applyMode();
+}
+
+loadData();
 </script>
 </body>
 </html>
