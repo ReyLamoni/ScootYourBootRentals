@@ -89,6 +89,7 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 .badge.available { background:var(--avail); }
 .badge.unavailable { background:var(--unavail); }
 .badge.partial { background:var(--partial); }
+.badge.booked { background:#c9a800; color:#fff; }
 .badge.click { cursor:pointer; }
 
 .card-body { padding:1.15rem 1.25rem 0.5rem; flex:1; display:flex; flex-direction:column; gap:0.7rem; }
@@ -603,6 +604,19 @@ function creatorCard(item){
   return card;
 }
 
+/* Returns true if the item has 21+ consecutive days blocked starting from today */
+function isCurrentlyBooked(itemId){
+  const cs=calSt[itemId];
+  if(!cs||!cs.blocked) return false;
+  const today=new Date(); today.setHours(0,0,0,0);
+  for(let i=0;i<21;i++){
+    const d=new Date(today); d.setDate(today.getDate()+i);
+    const key=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if(!cs.blocked[key]) return false;
+  }
+  return true;
+}
+
 /* ── RENTER CARD ── */
 function renterCard(item){
   const id=item.id;
@@ -616,8 +630,10 @@ function renterCard(item){
     ph.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>No photo yet</span>`;
     imgWrap.appendChild(ph);
   }
-  const lbs={available:'✓ Available',partial:'~ Limited',unavailable:'✗ Unavailable'};
-  const badge=mk('div','badge '+(item.status||'available')); badge.textContent=lbs[item.status||'available'];
+  const lbs={available:'✓ Available',partial:'~ Limited',unavailable:'✗ Unavailable',booked:'⏳ Currently Booked'};
+  const booked=isCurrentlyBooked(id);
+  const badgeStatus=booked?'booked':(item.status||'available');
+  const badge=mk('div','badge '+badgeStatus); badge.textContent=lbs[badgeStatus]||lbs['available'];
   imgWrap.appendChild(badge); card.appendChild(imgWrap);
 
   const body=mk('div','card-body');
