@@ -1,40 +1,29 @@
-/**
- * Scoot Your Boot Rentals — Backend Server
- * ==========================================
- * Handles:
- *   1. Password verification (bcrypt)
- *   2. Email notifications via Resend
- *   3. Full data persistence via MongoDB Atlas
- *   4. Serves the HTML frontend
- *
- * Setup:
- *   npm install
- *   node scripts/hash-password.js   ← run ONCE to generate your password hash
- *   node server.js
- */
-
 require('dotenv').config();
-const express    = require('express');
-const bcrypt     = require('bcrypt');
-const { Resend } = require('resend');
-const rateLimit  = require('express-rate-limit');
-const mongoose   = require('mongoose');
-const path       = require('path');
+const express      = require('express');
+const bcrypt       = require('bcrypt');
+const { Resend }   = require('resend');
+const rateLimit    = require('express-rate-limit');
+const mongoose     = require('mongoose');
+const cloudinary   = require('cloudinary').v2;
+const path         = require('path');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Connect to MongoDB ─────────────────────────────────────────────
+// ── Cloudinary config ──────────────────────────────────────────────
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// ── MongoDB ────────────────────────────────────────────────────────
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅  MongoDB connected'))
   .catch(err => console.error('❌  MongoDB connection error:', err));
 
-// ── Schemas ────────────────────────────────────────────────────────
-// We store everything in a single "store" document so the frontend
-// can load/save in one round trip. Simple and effective for a small
-// single-owner site like this.
 const storeSchema = new mongoose.Schema({
-  key:       { type: String, default: 'main' }, // always 'main' — only one doc
+  key:       { type: String, default: 'main' },
   items:     { type: mongoose.Schema.Types.Mixed, default: [] },
   calSt:     { type: mongoose.Schema.Types.Mixed, default: {} },
   inquiries: { type: mongoose.Schema.Types.Mixed, default: [] },
@@ -44,17 +33,14 @@ const storeSchema = new mongoose.Schema({
 
 const Store = mongoose.model('Store', storeSchema);
 
-// Helper: get or create the single store document
 async function getStore() {
   let store = await Store.findOne({ key: 'main' });
-  if (!store) {
-    store = await Store.create({ key: 'main' });
-  }
+  if (!store) store = await Store.create({ key: 'main' });
   return store;
 }
 
 // ── Middleware ─────────────────────────────────────────────────────
-app.use(express.json({ limit: '50mb' })); // large limit for base64 images/videos
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const loginLimiter = rateLimit({
@@ -65,36 +51,26 @@ const loginLimiter = rateLimit({
 
 // ── Routes ─────────────────────────────────────────────────────────
 
-/**
- * POST /api/login
- */
+// POST /api/login
 app.post('/api/login', loginLimiter, async (req, res) => {
   try {
     const { password } = req.body;
-    if (!password || typeof password !== 'string') {
+    if (!password || typeof password !== 'string')
       return res.status(400).json({ ok: false, error: 'Password required.' });
-    }
     const hash = process.env.ADMIN_PASSWORD_HASH;
-    if (!hash) {
+    if (!hash)
       return res.status(500).json({ ok: false, error: 'Server misconfiguration.' });
-    }
     const match = await bcrypt.compare(password, hash);
-    if (match) {
-      return res.json({ ok: true });
-    } else {
-      await new Promise(r => setTimeout(r, 500));
-      return res.status(401).json({ ok: false, error: 'Incorrect password.' });
-    }
+    if (match) return res.json({ ok: true });
+    await new Promise(r => setTimeout(r, 500));
+    return res.status(401).json({ ok: false, error: 'Incorrect password.' });
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ ok: false, error: 'Server error.' });
   }
 });
 
-/**
- * GET /api/data
- * Returns all persisted data to the frontend on page load.
- */
+// GET /api/data
 app.get('/api/data', async (req, res) => {
   try {
     const store = await getStore();
@@ -112,11 +88,7 @@ app.get('/api/data', async (req, res) => {
   }
 });
 
-/**
- * POST /api/data
- * Saves the full state from the frontend.
- * Body: { items, calSt, inquiries, rentals, videos }
- */
+// POST /api/data
 app.post('/api/data', async (req, res) => {
   try {
     const { items, calSt, inquiries, rentals, videos } = req.body;
@@ -133,17 +105,54 @@ app.post('/api/data', async (req, res) => {
 });
 
 /**
- * POST /api/inquiry
- * Saves inquiry to DB and sends Resend notification email.
+ * POST /api/upload-video
+ * Receives a base64 video from the browser, uploads it to Cloudinary,
+ * and returns the secure URL. Only the URL is stored in MongoDB.
+ * Body: { data: "data:video/mp4;base64,..." }
  */
+app.post('/api/upload-video', async (req, res) => {
+  try {
+    const { data } = req.body;
+    if (!data) return res.status(400).json({ ok: false, error: 'No video data provided.' });
+
+    const result = await cloudinary.uploader.upload(data, {
+      resource_type: 'video',
+      folder: 'scoot-your-boot',
+      transformation: [{ quality: 'auto' }],
+    });
+
+    console.log(`Video uploaded to Cloudinary: ${result.secure_url}`);
+    return res.json({ ok: true, url: result.secure_url, publicId: result.public_id });
+  } catch (err) {
+    console.error('Video upload error:', err);
+    return res.status(500).json({ ok: false, error: 'Video upload failed.' });
+  }
+});
+
+/**
+ * POST /api/delete-video
+ * Deletes a video from Cloudinary when the admin removes it.
+ * Body: { publicId: "scoot-your-boot/abc123" }
+ */
+app.post('/api/delete-video', async (req, res) => {
+  try {
+    const { publicId } = req.body;
+    if (!publicId) return res.status(400).json({ ok: false, error: 'No publicId provided.' });
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('Video delete error:', err);
+    return res.status(500).json({ ok: false, error: 'Video delete failed.' });
+  }
+});
+
+// POST /api/inquiry
 app.post('/api/inquiry', async (req, res) => {
   try {
     const { name, phone, email, itemName, dates, cost, msg, storeData } = req.body;
-    if (!name || !phone || !itemName) {
+    if (!name || !phone || !itemName)
       return res.status(400).json({ ok: false, error: 'Missing required fields.' });
-    }
 
-    // Save updated store state that includes the new inquiry
     if (storeData) {
       await Store.findOneAndUpdate(
         { key: 'main' },
@@ -152,7 +161,6 @@ app.post('/api/inquiry', async (req, res) => {
       );
     }
 
-    // Send notification email
     const resendKey   = process.env.RESEND_API_KEY;
     const notifyEmail = process.env.NOTIFY_EMAIL;
     const fromEmail   = process.env.FROM_EMAIL || 'onboarding@resend.dev';
@@ -165,16 +173,14 @@ app.post('/api/inquiry', async (req, res) => {
         to: [notifyEmail],
         subject: `New Rental Request — ${itemName}`,
         text: [
-          'New rental inquiry received!',
-          '',
+          'New rental inquiry received!', '',
           `Item:      ${itemName}`,
           `Renter:    ${name}`,
           `Phone:     ${phone}`,
           `Email:     ${email || 'not provided'}`,
           `Dates:     ${dates || 'not provided'}`,
           `Est Cost:  ${costLine}`,
-          `Message:   ${msg || '(none)'}`,
-          '',
+          `Message:   ${msg || '(none)'}`, '',
           'Log in to your admin panel to accept or decline.',
         ].join('\n'),
         html: `
@@ -197,12 +203,10 @@ app.post('/api/inquiry', async (req, res) => {
                 Log in to your admin panel to review and respond.
               </div>
             </div>
-          </div>
-        `,
+          </div>`,
       });
       console.log(`Notification sent to ${notifyEmail} for inquiry from ${name}`);
     }
-
     return res.json({ ok: true });
   } catch (err) {
     console.error('Inquiry error:', err);
