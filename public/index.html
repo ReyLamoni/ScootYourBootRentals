@@ -1073,11 +1073,40 @@ function renderVideoGrid(){
     const thumbWrap=mk('div','video-thumb-wrap');
 
     const fileInp=mk('input'); fileInp.type='file'; fileInp.accept='video/*'; fileInp.style.display='none';
-    fileInp.onchange=e=>{
+    fileInp.onchange=async e=>{
       const f=e.target.files[0]; if(!f) return;
-      const r=new FileReader();
-      r.onload=ev=>{v.src=ev.target.result; renderVideoGrid(); renderRenterVideos(); saveData();};
-      r.readAsDataURL(f);
+      // Show uploading state
+      const ph2=mk('div','video-ph');
+      ph2.innerHTML='<span style="color:#fff;font-size:0.85rem">Uploading…</span>';
+      thumbWrap.innerHTML=''; thumbWrap.appendChild(ph2); thumbWrap.appendChild(fileInp);
+      try {
+        // Read as base64 and send to server which uploads to Cloudinary
+        const base64=await new Promise((res,rej)=>{
+          const r=new FileReader();
+          r.onload=ev=>res(ev.target.result);
+          r.onerror=rej;
+          r.readAsDataURL(f);
+        });
+        const resp=await fetch('/api/upload-video',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({data:base64})
+        });
+        const data=await resp.json();
+        if(data.ok){
+          v.src=data.url;
+          v.publicId=data.publicId;
+          renderVideoGrid();
+          renderRenterVideos();
+          saveData();
+        } else {
+          alert('Video upload failed: '+data.error);
+          renderVideoGrid();
+        }
+      } catch(err){
+        alert('Video upload failed. Please try again.');
+        renderVideoGrid();
+      }
     };
 
     if(v.src){
@@ -1100,7 +1129,18 @@ function renderVideoGrid(){
     const titleInp=mk('input','video-title-inp'); titleInp.type='text'; titleInp.placeholder='Video title…'; titleInp.value=v.title||'';
     titleInp.oninput=()=>{v.title=titleInp.value; renderRenterVideos(); saveData();};
     const removeBtn=mk('button','video-remove-btn'); removeBtn.textContent='Remove video';
-    removeBtn.onclick=()=>{videos=videos.filter(x=>x.id!==v.id); renderVideoGrid(); renderRenterVideos(); saveData();};
+    removeBtn.onclick=async ()=>{
+      videos=videos.filter(x=>x.id!==v.id);
+      renderVideoGrid(); renderRenterVideos(); saveData();
+      // Delete from Cloudinary in background
+      if(v.publicId){
+        fetch('/api/delete-video',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({publicId:v.publicId})
+        }).catch(()=>{});
+      }
+    };
     body.appendChild(titleInp); body.appendChild(removeBtn);
     card.appendChild(body);
     grid.appendChild(card);
@@ -1118,7 +1158,7 @@ function renderRenterVideos(){
   const vgrid=mk('div','renter-video-grid');
   withSrc.forEach(v=>{
     const card=mk('div','renter-video-card');
-    const vid=mk('video'); vid.src=v.src; vid.controls=true;
+    const vid=mk('video'); vid.src=v.src; vid.controls=true; vid.preload='metadata';
     card.appendChild(vid);
     if(v.title){const lbl=mk('div','renter-video-label'); lbl.textContent=v.title; card.appendChild(lbl);}
     vgrid.appendChild(card);
