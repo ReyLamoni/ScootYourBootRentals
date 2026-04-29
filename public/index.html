@@ -977,6 +977,7 @@ function submitInq(id,btnEl){
     const newInq={id:uid(),itemId:id,itemName:item?item.name||'Unnamed Item':'Unknown Item',name,phone:phoneVal,email,dates:datesStr,dateStart:new Date(rp.start),dateEnd:new Date(rp.end),cost,msg,time:new Date(),isNew:true,accepted:false};
     inquiries.unshift(newInq);
     // Save state + send notification email in one call
+    const safeVideos=videos.map(v=>({id:v.id,title:v.title||'',src:(v.src&&v.src.startsWith('http'))?v.src:'',publicId:v.publicId||''}));
     fetch('/api/inquiry',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -984,7 +985,7 @@ function submitInq(id,btnEl){
         name,phone:phoneVal,email,
         itemName:item?item.name||'Unnamed Item':'Unknown Item',
         dates:datesStr,cost,msg,
-        storeData:{items,calSt,inquiries,rentals,videos}
+        storeData:{items,calSt,inquiries,rentals,videos:safeVideos}
       })
     }).catch(()=>{});
     document.getElementById('sent-overlay').classList.add('open');
@@ -1385,10 +1386,22 @@ function saveData() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try {
+      // Strip base64 from videos — only save Cloudinary URLs
+      const safeVideos = videos.map(v => ({
+        id: v.id,
+        title: v.title || '',
+        src: (v.src && v.src.startsWith('http')) ? v.src : '',
+        publicId: v.publicId || ''
+      }));
+      // Keep item images but warn if they're very large
+      const safeItems = items.map(item => ({
+        ...item,
+        imgSrc: item.imgSrc && item.imgSrc.length > 1000000 ? '' : (item.imgSrc || '')
+      }));
       await fetch('/api/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, calSt, inquiries, rentals, videos })
+        body: JSON.stringify({ items: safeItems, calSt, inquiries, rentals, videos: safeVideos })
       });
     } catch(e) { console.warn('Auto-save failed:', e); }
   }, 1500);
