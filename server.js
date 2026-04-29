@@ -146,7 +146,42 @@ app.post('/api/delete-video', async (req, res) => {
   }
 });
 
-// POST /api/inquiry
+/**
+ * POST /api/upload-image
+ * Uploads a listing photo to Cloudinary and returns the URL.
+ */
+app.post('/api/upload-image', async (req, res) => {
+  try {
+    const { data } = req.body;
+    if (!data) return res.status(400).json({ ok: false, error: 'No image data provided.' });
+    const result = await cloudinary.uploader.upload(data, {
+      resource_type: 'image',
+      folder: 'scoot-your-boot/images',
+      transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+    });
+    console.log(`Image uploaded to Cloudinary: ${result.secure_url}`);
+    return res.json({ ok: true, url: result.secure_url, publicId: result.public_id });
+  } catch (err) {
+    console.error('Image upload error:', err);
+    return res.status(500).json({ ok: false, error: 'Image upload failed.' });
+  }
+});
+
+/**
+ * POST /api/delete-image
+ * Deletes a listing photo from Cloudinary.
+ */
+app.post('/api/delete-image', async (req, res) => {
+  try {
+    const { publicId } = req.body;
+    if (!publicId) return res.status(400).json({ ok: false, error: 'No publicId provided.' });
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('Image delete error:', err);
+    return res.status(500).json({ ok: false, error: 'Image delete failed.' });
+  }
+});
 app.post('/api/inquiry', async (req, res) => {
   try {
     const { name, phone, email, itemName, dates, cost, msg, storeData } = req.body;
