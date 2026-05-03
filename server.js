@@ -253,6 +253,25 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'Scoot Your Boot Rentals', time: new Date().toISOString() });
 });
 
+// ── SEO ───────────────────────────────────────────────
+app.get('/sitemap.xml', (req, res) => {
+  res.header('Content-Type', 'application/xml');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://scootyourbootrentals.onrender.com</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`);
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.header('Content-Type', 'text/plain');
+  res.send(`User-agent: *\nAllow: /\nSitemap: https://scootyourbootrentals.onrender.com/sitemap.xml`);
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
