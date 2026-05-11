@@ -1123,7 +1123,16 @@ function acceptInquiry(inqId){
 
   inq.accepted=true; inq.isNew=false;
 
-  // Create rental record
+  // Build ownedDays map from the inquiry date range
+  const ownedDays={};
+  const oCur=new Date(inq.dateStart); oCur.setHours(0,0,0,0);
+  const oEnd=new Date(inq.dateEnd);   oEnd.setHours(0,0,0,0);
+  while(oCur<=oEnd){
+    ownedDays[`${oCur.getFullYear()}-${oCur.getMonth()}-${oCur.getDate()}`]=true;
+    oCur.setDate(oCur.getDate()+1);
+  }
+
+  // Create rental record — store ownedDays so edit calendar always knows which days belong here
   rentals.push({
     id: uid(),
     inqId,
@@ -1133,6 +1142,9 @@ function acceptInquiry(inqId){
     phone: inq.phone,
     email: inq.email,
     dates: inq.dates,
+    dateStart: inq.dateStart,
+    dateEnd: inq.dateEnd,
+    ownedDays,
     totalOwed: inq.cost||0,
     amtPaid: 0,
     pickedUp: false,
@@ -1322,26 +1334,22 @@ function drawEditRentalCal(rentalId, calDiv){
   }
   const rp=rentalEditPick[rentalId];
 
-  // Always rebuild ownedDays from the blocked calendar keys that belong to this rental.
-  // This is more reliable than storing ownedDays separately since it survives page refresh.
   const cs=calSt[r.itemId]||(calSt[r.itemId]={year:rp.year,month:rp.month,blocked:{}});
   if(!cs.blocked) cs.blocked={};
 
-  if(!r.ownedDays || Object.keys(r.ownedDays).length===0){
+  // Ensure ownedDays exists — fallback rebuild only if missing entirely
+  if(!r.ownedDays || typeof r.ownedDays!=='object'){
     r.ownedDays={};
-    // Rebuild from dateStart/dateEnd — handle both Date objects and strings from DB
-    if(r.dateStart&&r.dateEnd){
-      const cur=new Date(r.dateStart); cur.setHours(0,0,0,0);
-      const end=new Date(r.dateEnd); end.setHours(0,0,0,0);
-      if(!isNaN(cur)&&!isNaN(end)){
-        while(cur<=end){
-          const key=`${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`;
-          r.ownedDays[key]=true;
-          // Make sure these days are also blocked on the calendar
-          cs.blocked[key]=true;
-          cur.setDate(cur.getDate()+1);
-        }
-      }
+  }
+  // If ownedDays is empty but we have dateStart/dateEnd, rebuild it
+  if(Object.keys(r.ownedDays).length===0 && r.dateStart && r.dateEnd){
+    const cur=new Date(r.dateStart); cur.setHours(0,0,0,0);
+    const end=new Date(r.dateEnd);   end.setHours(0,0,0,0);
+    while(!isNaN(cur) && cur<=end){
+      const key=`${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`;
+      r.ownedDays[key]=true;
+      cs.blocked[key]=true;
+      cur.setDate(cur.getDate()+1);
     }
   }
   calDiv.innerHTML='';
@@ -1738,7 +1746,21 @@ async function loadData() {
         if (inq.dateEnd)   inq.dateEnd   = new Date(inq.dateEnd);
         if (inq.time)      inq.time      = new Date(inq.time);
       });
-      rentals.forEach(r => { if (r.time) r.time = new Date(r.time); });
+      rentals.forEach(r => {
+        if (r.time) r.time = new Date(r.time);
+        // Backfill ownedDays for rentals loaded from DB that don't have it yet
+        if(!r.ownedDays || typeof r.ownedDays!=='object' || Object.keys(r.ownedDays).length===0){
+          r.ownedDays={};
+          if(r.dateStart && r.dateEnd){
+            const cur=new Date(r.dateStart); cur.setHours(0,0,0,0);
+            const end=new Date(r.dateEnd);   end.setHours(0,0,0,0);
+            while(!isNaN(cur) && cur<=end){
+              r.ownedDays[`${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`]=true;
+              cur.setDate(cur.getDate()+1);
+            }
+          }
+        }
+      });
     }
   } catch(e) { console.warn('Could not load data:', e); }
   applyMode();
