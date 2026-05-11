@@ -1322,23 +1322,28 @@ function drawEditRentalCal(rentalId, calDiv){
   }
   const rp=rentalEditPick[rentalId];
 
-  // Build set of this rental's owned days from calSt
-  // We store owned days directly on the rental object as a Set-friendly array
-  if(!r.ownedDays){
-    // Initialise from dateStart/dateEnd on first open
+  // Always rebuild ownedDays from the blocked calendar keys that belong to this rental.
+  // This is more reliable than storing ownedDays separately since it survives page refresh.
+  const cs=calSt[r.itemId]||(calSt[r.itemId]={year:rp.year,month:rp.month,blocked:{}});
+  if(!cs.blocked) cs.blocked={};
+
+  if(!r.ownedDays || Object.keys(r.ownedDays).length===0){
     r.ownedDays={};
+    // Rebuild from dateStart/dateEnd — handle both Date objects and strings from DB
     if(r.dateStart&&r.dateEnd){
       const cur=new Date(r.dateStart); cur.setHours(0,0,0,0);
       const end=new Date(r.dateEnd); end.setHours(0,0,0,0);
-      while(cur<=end){
-        r.ownedDays[`${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`]=true;
-        cur.setDate(cur.getDate()+1);
+      if(!isNaN(cur)&&!isNaN(end)){
+        while(cur<=end){
+          const key=`${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`;
+          r.ownedDays[key]=true;
+          // Make sure these days are also blocked on the calendar
+          cs.blocked[key]=true;
+          cur.setDate(cur.getDate()+1);
+        }
       }
     }
   }
-
-  const cs=calSt[r.itemId]||(calSt[r.itemId]={year:rp.year,month:rp.month,blocked:{}});
-  if(!cs.blocked) cs.blocked={};
   calDiv.innerHTML='';
 
   // Nav header
@@ -1443,10 +1448,14 @@ function buildRentalTable(list, isCompletedTable){
   const table=document.createElement('table');
   table.className='rentals-table'+(isCompletedTable?' completed-table':'');
   table.innerHTML=`<thead><tr>
-    <th>Item</th><th>Renter</th><th>Dates</th><th>Total Owed</th>
-    <th>Amt Paid</th><th>Balance</th><th>Status</th>
+    <th>Item</th><th>Renter</th>
+    <th style="width:110px">Dates</th>
+    <th style="width:90px">Total Owed</th>
+    <th style="width:90px">Amt Paid</th>
+    <th style="width:80px">Balance</th>
+    <th style="width:110px">Status</th>
     <th>Notes</th>
-    <th style="text-align:right">✏️ Edit</th>
+    <th style="width:55px;text-align:right">✏️</th>
   </tr></thead>`;
   const tbody=document.createElement('tbody');
 
@@ -1484,7 +1493,7 @@ function buildRentalTable(list, isCompletedTable){
     }
 
     // ── Dates cell
-    const tdDates=document.createElement('td'); tdDates.style.minWidth='220px';
+    const tdDates=document.createElement('td'); tdDates.style.minWidth='110px';
     if(isEditing){
       const calWrap=document.createElement('div');
       const calDiv=document.createElement('div'); calDiv.className='rdp-cal'; calDiv.style.marginBottom='0.4rem';
@@ -1558,7 +1567,9 @@ function buildRentalTable(list, isCompletedTable){
     const tdActions=document.createElement('td'); tdActions.style.textAlign='right'; tdActions.style.verticalAlign='top';
     const actWrap=document.createElement('div'); actWrap.style.cssText='display:flex;flex-direction:column;align-items:flex-end;gap:0.35rem';
     const editBtn=document.createElement('button'); editBtn.className='rt-edit-btn'+(isEditing?' active':'');
-    editBtn.innerHTML='✏️ <span>'+(isEditing?'Done':'Edit')+'</span>';
+    editBtn.innerHTML=isEditing?'✅':'✏️';
+    editBtn.title=isEditing?'Done editing':'Edit this rental';
+    editBtn.style.fontSize='1rem';
     editBtn.onclick=()=>{
       r._editing=!r._editing;
       if(!r._editing) saveData();
