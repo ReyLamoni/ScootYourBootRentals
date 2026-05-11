@@ -172,8 +172,8 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 .r-title { font-family:'Playfair Display',serif; font-size:1.18rem; font-weight:700; line-height:1.3; }
 .r-price { font-size:1.1rem; font-weight:600; color:var(--rust); }
 .r-per { font-size:0.78rem; color:#888; }
-.r-text { font-size:0.86rem; color:#444; line-height:1.6; }
-.r-terms { font-size:0.82rem; color:#666; font-style:italic; line-height:1.55; }
+.r-text { font-size:0.86rem; color:#444; line-height:1.6; white-space:pre-wrap; }
+.r-terms { font-size:0.82rem; color:#666; font-style:italic; line-height:1.55; white-space:pre-wrap; }
 .r-contact { display:inline-flex; align-items:center; gap:0.35rem; font-size:0.84rem; color:var(--creator-accent); text-decoration:none; font-weight:500; }
 .r-contact:hover { text-decoration:underline; }
 
@@ -364,8 +364,12 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 .rt-check-label { display:flex; align-items:center; gap:0.35rem; font-size:0.8rem; color:#555; cursor:pointer; white-space:nowrap; }
 .rt-check-label input[type=checkbox] { width:15px; height:15px; cursor:pointer; accent-color:var(--creator-accent); }
 .rt-check-label.checked { color:var(--avail); font-weight:500; }
-.rt-notes-input { border:1.5px solid #e0dbd2; border-radius:5px; padding:0.28rem 0.45rem; font-family:'DM Sans',sans-serif; font-size:0.8rem; width:100%; outline:none; color:var(--ink); background:var(--warm-white); transition:border-color 0.2s; }
+.rt-notes-input { border:1.5px solid #e0dbd2; border-radius:5px; padding:0.28rem 0.45rem; font-family:'DM Sans',sans-serif; font-size:0.8rem; width:100%; outline:none; color:var(--ink); background:var(--warm-white); transition:border-color 0.2s; resize:vertical; min-height:32px; overflow-y:hidden; }
 .rt-notes-input:focus { border-color:var(--creator-accent); }
+.rt-notes-readonly { font-size:0.8rem; color:var(--ink); white-space:pre-wrap; line-height:1.5; padding:0.28rem 0.45rem; min-height:32px; word-break:break-word; }
+.rt-edit-btn { background:none; border:none; color:#aaa; cursor:pointer; font-size:0.75rem; font-family:'DM Sans',sans-serif; display:flex; align-items:center; gap:0.25rem; padding:0.2rem 0.4rem; border-radius:3px; transition:color 0.2s,background 0.2s; white-space:nowrap; }
+.rt-edit-btn:hover { color:var(--creator-accent); background:#eef2f8; }
+.rt-edit-btn.active { color:var(--creator-accent); background:#eef2f8; font-weight:500; }
 .rt-remove-btn { background:none; border:none; color:#ddd; cursor:pointer; font-size:1rem; padding:0.15rem; transition:color 0.2s; }
 .rt-remove-btn:hover { color:var(--unavail); }
 
@@ -1317,7 +1321,9 @@ function buildRentalTable(list, isCompletedTable){
   table.className='rentals-table'+(isCompletedTable?' completed-table':'');
   table.innerHTML=`<thead><tr>
     <th>Item</th><th>Renter</th><th>Dates</th><th>Total Owed</th>
-    <th>Amt Paid</th><th>Balance</th><th>Status</th><th>Notes</th><th></th>
+    <th>Amt Paid</th><th>Balance</th><th>Status</th>
+    <th>Notes</th>
+    <th style="text-align:right">✏️ Edit</th>
   </tr></thead>`;
   const tbody=document.createElement('tbody');
 
@@ -1330,34 +1336,109 @@ function buildRentalTable(list, isCompletedTable){
     if(balance<=0&&owed>0){ balCls='rt-balance paid-full'; balTxt=balance<0?`$${Math.abs(balance).toFixed(2)} over`:'Paid in full'; }
     else if(owed===0){ balCls='rt-balance paid-full'; balTxt='—'; }
 
-    tr.innerHTML=`
-      <td><div class="rt-item-name">${esc(r.itemName)}</div></td>
-      <td><div class="rt-renter-name">${esc(r.renterName)}</div><div class="rt-phone">${esc(r.phone||'')}</div>${r.email?`<div class="rt-phone">${esc(r.email)}</div>`:''}</td>
-      <td><div class="rt-dates">${esc(r.dates||'—')}</div></td>
-      <td><div class="rt-total">${owed>0?'$'+owed.toFixed(2):'—'}</div></td>
-      <td>
-        <div class="rt-paid-wrap">
-          <span class="rt-paid-prefix">$</span>
-          <input class="rt-paid-input" type="number" min="0" step="0.01" value="${paid>0?paid.toFixed(2):''}" placeholder="0.00"
-            onchange="updateRental('${r.id}','amtPaid',this.value)">
-        </div>
-      </td>
-      <td><span class="${balCls}">${balTxt}</span></td>
-      <td>
-        <div class="rt-check-wrap">
-          <label class="rt-check-label${r.pickedUp?' checked':''}">
-            <input type="checkbox" ${r.pickedUp?'checked':''} onchange="updateRental('${r.id}','pickedUp',this.checked)">
-            Picked up
-          </label>
-          <label class="rt-check-label${r.droppedOff?' checked':''}">
-            <input type="checkbox" ${r.droppedOff?'checked':''} onchange="updateRental('${r.id}','droppedOff',this.checked)">
-            Dropped off
-          </label>
-        </div>
-      </td>
-      <td><input class="rt-notes-input" type="text" placeholder="Notes…" value="${esc(r.notes||'')}"
-        onchange="updateRental('${r.id}','notes',this.value)"></td>
-      <td><button class="rt-remove-btn" title="Remove rental" onclick="removeRental('${r.id}')">×</button></td>`;
+    const isEditing = r._editing || false;
+
+    // ── Item cell
+    const tdItem=document.createElement('td');
+    if(isEditing){
+      const inp=document.createElement('input'); inp.className='rt-paid-input'; inp.style.width='100%';
+      inp.value=r.itemName||''; inp.onchange=e=>{r.itemName=e.target.value;saveData();};
+      tdItem.appendChild(inp);
+    } else {
+      tdItem.innerHTML=`<div class="rt-item-name">${esc(r.itemName)}</div>`;
+    }
+
+    // ── Renter cell
+    const tdRenter=document.createElement('td');
+    if(isEditing){
+      const nInp=document.createElement('input'); nInp.className='rt-paid-input'; nInp.style.width='100%'; nInp.style.marginBottom='4px';
+      nInp.value=r.renterName||''; nInp.placeholder='Name'; nInp.onchange=e=>{r.renterName=e.target.value;saveData();};
+      const pInp=document.createElement('input'); pInp.className='rt-paid-input'; pInp.style.width='100%';
+      pInp.value=r.phone||''; pInp.placeholder='Phone'; pInp.onchange=e=>{r.phone=e.target.value;saveData();};
+      tdRenter.appendChild(nInp); tdRenter.appendChild(pInp);
+    } else {
+      tdRenter.innerHTML=`<div class="rt-renter-name">${esc(r.renterName)}</div><div class="rt-phone">${esc(r.phone||'')}</div>${r.email?`<div class="rt-phone">${esc(r.email)}</div>`:''}`;
+    }
+
+    // ── Dates cell
+    const tdDates=document.createElement('td');
+    if(isEditing){
+      const dInp=document.createElement('input'); dInp.className='rt-paid-input'; dInp.style.width='100%';
+      dInp.value=r.dates||''; dInp.placeholder='Dates'; dInp.onchange=e=>{r.dates=e.target.value;saveData();};
+      tdDates.appendChild(dInp);
+    } else {
+      tdDates.innerHTML=`<div class="rt-dates">${esc(r.dates||'—')}</div>`;
+    }
+
+    // ── Total owed cell
+    const tdOwed=document.createElement('td');
+    if(isEditing){
+      const oWrap=document.createElement('div'); oWrap.className='rt-paid-wrap';
+      oWrap.innerHTML='<span class="rt-paid-prefix">$</span>';
+      const oInp=document.createElement('input'); oInp.type='number'; oInp.className='rt-paid-input'; oInp.min='0'; oInp.step='0.01';
+      oInp.value=owed>0?owed.toFixed(2):''; oInp.placeholder='0.00';
+      oInp.onchange=e=>{updateRental(r.id,'totalOwed',e.target.value);};
+      oWrap.appendChild(oInp); tdOwed.appendChild(oWrap);
+    } else {
+      tdOwed.innerHTML=`<div class="rt-total">${owed>0?'$'+owed.toFixed(2):'—'}</div>`;
+    }
+
+    // ── Amount paid cell (always editable)
+    const tdPaid=document.createElement('td');
+    const pWrap=document.createElement('div'); pWrap.className='rt-paid-wrap';
+    pWrap.innerHTML='<span class="rt-paid-prefix">$</span>';
+    const pInp=document.createElement('input'); pInp.type='number'; pInp.className='rt-paid-input'; pInp.min='0'; pInp.step='0.01';
+    pInp.value=paid>0?paid.toFixed(2):''; pInp.placeholder='0.00';
+    pInp.onchange=e=>{updateRental(r.id,'amtPaid',e.target.value);};
+    pWrap.appendChild(pInp); tdPaid.appendChild(pWrap);
+
+    // ── Balance cell
+    const tdBal=document.createElement('td');
+    tdBal.innerHTML=`<span class="${balCls}">${balTxt}</span>`;
+
+    // ── Status cell (checkboxes — always editable)
+    const tdStatus=document.createElement('td');
+    const chkWrap=document.createElement('div'); chkWrap.className='rt-check-wrap';
+    const mkChk=(label,field,checked)=>{
+      const lbl=document.createElement('label'); lbl.className='rt-check-label'+(checked?' checked':'');
+      const cb=document.createElement('input'); cb.type='checkbox'; if(checked) cb.checked=true;
+      cb.onchange=()=>{ updateRental(r.id,field,cb.checked); lbl.className='rt-check-label'+(cb.checked?' checked':''); };
+      lbl.appendChild(cb); lbl.appendChild(document.createTextNode(' '+label));
+      return lbl;
+    };
+    chkWrap.appendChild(mkChk('Picked up','pickedUp',r.pickedUp));
+    chkWrap.appendChild(mkChk('Dropped off','droppedOff',r.droppedOff));
+    tdStatus.appendChild(chkWrap);
+
+    // ── Notes cell — auto-expanding textarea always visible
+    const tdNotes=document.createElement('td');
+    const notesTA=document.createElement('textarea'); notesTA.className='rt-notes-input';
+    notesTA.placeholder='Notes…'; notesTA.value=r.notes||'';
+    notesTA.style.height='auto';
+    notesTA.oninput=()=>{ notesTA.style.height='auto'; notesTA.style.height=notesTA.scrollHeight+'px'; };
+    notesTA.onchange=()=>{ updateRental(r.id,'notes',notesTA.value); };
+    // Set initial height after appending
+    setTimeout(()=>{ notesTA.style.height='auto'; notesTA.style.height=notesTA.scrollHeight+'px'; },0);
+    tdNotes.appendChild(notesTA);
+
+    // ── Edit / Remove cell
+    const tdActions=document.createElement('td'); tdActions.style.textAlign='right'; tdActions.style.verticalAlign='top';
+    const actWrap=document.createElement('div'); actWrap.style.cssText='display:flex;flex-direction:column;align-items:flex-end;gap:0.35rem';
+    const editBtn=document.createElement('button'); editBtn.className='rt-edit-btn'+(isEditing?' active':'');
+    editBtn.innerHTML='✏️ <span>'+(isEditing?'Done':'Edit')+'</span>';
+    editBtn.onclick=()=>{
+      r._editing=!r._editing;
+      if(!r._editing) saveData();
+      renderRentalsTab();
+    };
+    const removeBtn=document.createElement('button'); removeBtn.className='rt-remove-btn'; removeBtn.title='Remove rental'; removeBtn.textContent='×';
+    removeBtn.onclick=()=>removeRental(r.id);
+    actWrap.appendChild(editBtn); actWrap.appendChild(removeBtn);
+    tdActions.appendChild(actWrap);
+
+    tr.appendChild(tdItem); tr.appendChild(tdRenter); tr.appendChild(tdDates);
+    tr.appendChild(tdOwed); tr.appendChild(tdPaid); tr.appendChild(tdBal);
+    tr.appendChild(tdStatus); tr.appendChild(tdNotes); tr.appendChild(tdActions);
     tbody.appendChild(tr);
   });
 
@@ -1417,7 +1498,7 @@ function updateRental(id, field, value){
   const r=rentals.find(r=>r.id===id);
   if(!r) return;
   if(field==='pickedUp'||field==='droppedOff') r[field]=value;
-  else if(field==='amtPaid') r[field]=parseFloat(value)||0;
+  else if(field==='amtPaid'||field==='totalOwed') r[field]=parseFloat(value)||0;
   else r[field]=value;
   renderRentalsTab();
   saveData();
