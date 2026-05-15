@@ -425,6 +425,43 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 <!-- Renter: instructional videos (shown when videos exist) -->
 <div class="renter-videos" id="renter-videos"></div>
 
+<!-- ══ STATIC CONTENT for Google crawler ══
+     Visible immediately before JS loads. Hidden by JS once app boots.
+     This prevents the Soft 404 error from Google Search Console. -->
+<div id="seo-static" style="max-width:1300px;margin:0 auto;padding:2.5rem 2rem">
+  <h1 style="font-family:'Playfair Display',serif;font-size:2rem;color:#1a1410;margin-bottom:1rem">
+    Knee Scooter Rentals in Provo, Utah
+  </h1>
+  <p style="font-size:1rem;color:#444;line-height:1.75;margin-bottom:1.5rem">
+    Scoot Your Boot Rentals offers affordable knee scooter and mobility equipment rentals in Provo, Utah.
+    Perfect for post-surgery recovery, foot or leg injuries, and anyone needing a comfortable, hands-free
+    alternative to crutches. Browse available items, check availability, and submit a rental inquiry — all online.
+  </p>
+  <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;color:#1a1410;margin-bottom:0.75rem">
+    Why Rent a Knee Scooter?
+  </h2>
+  <p style="font-size:0.95rem;color:#444;line-height:1.75;margin-bottom:1.5rem">
+    Knee scooters — also called knee walkers — let you stay mobile after foot, ankle, or lower leg surgery
+    without putting weight on your injury. They're more comfortable and easier to use than crutches,
+    and renting is far more affordable than purchasing one outright for a short recovery period.
+  </p>
+  <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;color:#1a1410;margin-bottom:0.75rem">
+    How It Works
+  </h2>
+  <p style="font-size:0.95rem;color:#444;line-height:1.75;margin-bottom:1.5rem">
+    Browse our available listings, select your dates on the availability calendar, and submit a rental inquiry.
+    We'll confirm your booking quickly and arrange pickup. We serve Provo, Orem, Springville, Pleasant Grove,
+    Lehi, and surrounding Utah County communities.
+  </p>
+  <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;color:#1a1410;margin-bottom:0.75rem">
+    Contact &amp; Booking
+  </h2>
+  <p style="font-size:0.95rem;color:#444;line-height:1.75">
+    Use the inquiry form on any listing to get in touch. We typically respond within a few hours.
+    Rental periods are flexible — daily, weekly, or monthly rates available.
+  </p>
+</div>
+
 <!-- Admin panel (creator only) -->
 <div class="admin-panel" id="admin-panel">
   <div class="tab-bar">
@@ -475,7 +512,13 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
   <div class="sec-header">
     <div class="sec-title">Listings <span class="item-count" id="renter-count"></span></div>
   </div>
-  <div class="grid" id="renter-grid"></div>
+  <div class="grid" id="renter-grid">
+    <!-- Static placeholder visible to Google before JS loads -->
+    <p id="grid-placeholder" style="grid-column:1/-1;color:#888;font-size:0.95rem;padding:1rem 0">
+      Knee scooter and mobility equipment available for rent in Provo, Utah.
+      Submit an inquiry to reserve your dates.
+    </p>
+  </div>
 </main>
 
 <!-- Password modal -->
@@ -512,6 +555,10 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 <script>
 const PASSWORD = 'admin123'; // ← change this to your password — LEGACY, now handled by server
 let isCreator = false;
+
+// Hide static SEO content — JS is running so the app will render properly
+const seoStatic = document.getElementById('seo-static');
+if(seoStatic) seoStatic.style.display = 'none';
 let items = [];
 let inquiries = [];
 let rentals = [];
