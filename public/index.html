@@ -753,12 +753,8 @@ function isCurrentlyBooked(itemId){
   const cs=calSt[itemId];
   if(!cs||!cs.blocked) return false;
   const today=new Date(); today.setHours(0,0,0,0);
-  for(let i=0;i<21;i++){
-    const d=new Date(today); d.setDate(today.getDate()+i);
-    const key=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    if(!cs.blocked[key]) return false;
-  }
-  return true;
+  const key=`${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+  return !!cs.blocked[key];
 }
 
 /* ── RENTER CARD ── */
@@ -785,6 +781,30 @@ function renterCard(item){
   if(item.price){
     const pd=mk('div'); pd.innerHTML=`<span class="r-price">$${parseFloat(item.price||0).toFixed(2)}</span> <span class="r-per">${item.per||'/ day'}</span>`; body.appendChild(pd);
   }
+  // ── Inquiry button — prominent, above description
+  const inqBtnWrap=mk('div'); inqBtnWrap.style.cssText='margin:0.5rem 0 0.25rem';
+  const inqQuickBtn=mk('button');
+  inqQuickBtn.style.cssText='width:100%;background:var(--rust);color:#fff;border:none;border-radius:7px;padding:0.75rem 1rem;font-family:\'DM Sans\',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;letter-spacing:0.02em;transition:background 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem;';
+  inqQuickBtn.innerHTML='✉️ Send Rental Inquiry';
+  inqQuickBtn.onmouseover=()=>inqQuickBtn.style.background='var(--rust-dark)';
+  inqQuickBtn.onmouseout=()=>inqQuickBtn.style.background='var(--rust)';
+  inqQuickBtn.onclick=()=>{
+    // Open the inquiry form below
+    const form=document.getElementById('inq-'+id);
+    if(form&&!form.classList.contains('open')){
+      form.classList.add('open');
+      const toggle=form.previousElementSibling;
+      if(toggle) toggle.querySelector('span:last-child').textContent='▴';
+      form.scrollIntoView({behavior:'smooth',block:'nearest'});
+      // draw calendar if not yet drawn
+      const calDiv=document.getElementById('rdp-cal-'+id);
+      if(calDiv&&!calDiv.innerHTML) drawRenterCal(id,item);
+    }
+    form&&form.scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
+  inqBtnWrap.appendChild(inqQuickBtn);
+  body.appendChild(inqBtnWrap);
+
   if(item.desc){ const dw=mk('div'); dw.innerHTML='<label class="flabel">About</label>'; const dp=mk('p','r-text'); dp.textContent=item.desc; dw.appendChild(dp); body.appendChild(dw); }
   if(item.terms){ const tw=mk('div'); tw.innerHTML='<label class="flabel">Terms</label>'; const tp=mk('p','r-terms'); tp.textContent=item.terms; tw.appendChild(tp); body.appendChild(tw); }
   if(item.contact){
@@ -813,7 +833,17 @@ function calSection(id,editable){
   const btn=mk('button','cal-toggle');
   btn.innerHTML='<span>📅 Availability Calendar</span><span>▾</span>';
   const popup=mk('div','cal-popup');
-  btn.onclick=()=>{popup.classList.toggle('open');btn.querySelector('span:last-child').textContent=popup.classList.contains('open')?'▴':'▾';if(popup.classList.contains('open'))drawCal(id,editable,popup);};
+  btn.onclick=()=>{
+    popup.classList.toggle('open');
+    btn.querySelector('span:last-child').textContent=popup.classList.contains('open')?'▴':'▾';
+    if(popup.classList.contains('open')){
+      // Always open to current month
+      const now=new Date();
+      calSt[id].year=now.getFullYear();
+      calSt[id].month=now.getMonth();
+      drawCal(id,editable,popup);
+    }
+  };
   wrap.appendChild(btn); wrap.appendChild(popup); return wrap;
 }
 function drawCal(id,editable,popup){
@@ -1354,7 +1384,24 @@ function renderInqPanel(){
     acceptBtn.title='Accept this inquiry and block the dates on the calendar';
     acceptBtn.onclick=(e)=>{e.stopPropagation();acceptInquiry(inq.id);};
     const dis=mk('button','inq-card-dismiss'); dis.textContent='×'; dis.title='Decline & dismiss';
-    dis.onclick=(e)=>{e.stopPropagation();inquiries=inquiries.filter(i=>i.id!==inq.id);renderInqPanel();};
+    dis.onclick=(e)=>{
+      e.stopPropagation();
+      // Unblock any pending days for this inquiry from the calendar
+      if(inq.dateStart&&inq.dateEnd&&inq.itemId){
+        const cs=calSt[inq.itemId];
+        if(cs&&cs.blocked){
+          const cur=new Date(inq.dateStart); cur.setHours(0,0,0,0);
+          const end=new Date(inq.dateEnd);   end.setHours(0,0,0,0);
+          while(!isNaN(cur)&&cur<=end){
+            delete cs.blocked[`${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`];
+            cur.setDate(cur.getDate()+1);
+          }
+        }
+      }
+      inquiries=inquiries.filter(i=>i.id!==inq.id);
+      renderInqPanel();
+      saveData();
+    };
     right.appendChild(timeEl); right.appendChild(acceptBtn); right.appendChild(dis);
     card.appendChild(body); card.appendChild(right);
     card.onclick=()=>{inq.isNew=false;renderInqPanel();};
@@ -1528,9 +1575,32 @@ function buildRentalTable(list, isCompletedTable){
     // ── Item cell
     const tdItem=document.createElement('td');
     if(isEditing){
-      const inp=document.createElement('input'); inp.className='rt-paid-input'; inp.style.width='100%';
-      inp.value=r.itemName||''; inp.onchange=e=>{r.itemName=e.target.value;saveData();};
-      tdItem.appendChild(inp);
+      const sel=document.createElement('select'); sel.className='rt-paid-input'; sel.style.width='100%';
+      items.forEach(it=>{
+        const op=document.createElement('option'); op.value=it.id; op.textContent=it.name||'Unnamed Item';
+        if(it.id===r.itemId) op.selected=true;
+        sel.appendChild(op);
+      });
+      sel.onchange=()=>{
+        if(!confirm('Switch this rental to a different scooter? This will unblock days on the current scooter and block them on the new one.')) { sel.value=r.itemId; return; }
+        // Unblock days from old item
+        unblockRentalDays(r);
+        // Switch item
+        r.itemId=sel.value;
+        const newItem=items.find(i=>i.id===r.itemId);
+        r.itemName=newItem?newItem.name||'Unnamed Item':'Unknown Item';
+        // Block days on new item
+        if(!calSt[r.itemId]) calSt[r.itemId]={year:new Date().getFullYear(),month:new Date().getMonth(),blocked:{}};
+        if(!calSt[r.itemId].blocked) calSt[r.itemId].blocked={};
+        if(r.ownedDays) Object.keys(r.ownedDays).forEach(key=>calSt[r.itemId].blocked[key]=true);
+        // Recalc cost for new item's price
+        const totalDays=r.ownedDays?Object.keys(r.ownedDays).length:0;
+        const cost=calcEstimate(totalDays,newItem);
+        if(cost!=null) r.totalOwed=cost;
+        saveData();
+        renderRentalsTab();
+      };
+      tdItem.appendChild(sel);
     } else {
       tdItem.innerHTML=`<div class="rt-item-name">${esc(r.itemName)}</div>`;
     }
@@ -1703,8 +1773,27 @@ function updateRental(id, field, value){
   saveData();
 }
 
+function unblockRentalDays(r){
+  if(!r) return;
+  const cs=calSt[r.itemId];
+  if(!cs||!cs.blocked) return;
+  // Use ownedDays if available (most accurate), otherwise fall back to dateStart/dateEnd
+  if(r.ownedDays&&Object.keys(r.ownedDays).length){
+    Object.keys(r.ownedDays).forEach(key=>delete cs.blocked[key]);
+  } else if(r.dateStart&&r.dateEnd){
+    const cur=new Date(r.dateStart); cur.setHours(0,0,0,0);
+    const end=new Date(r.dateEnd);   end.setHours(0,0,0,0);
+    while(!isNaN(cur)&&cur<=end){
+      delete cs.blocked[`${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`];
+      cur.setDate(cur.getDate()+1);
+    }
+  }
+}
+
 function removeRental(id){
   if(!confirm('Remove this rental record?')) return;
+  const r=rentals.find(r=>r.id===id);
+  unblockRentalDays(r);
   rentals=rentals.filter(r=>r.id!==id);
   renderRentalsTab();
   saveData();
