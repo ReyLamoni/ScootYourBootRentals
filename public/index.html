@@ -275,6 +275,48 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 .lightbox img { max-width:90vw; max-height:85vh; border-radius:8px; }
 .lb-close { position:absolute; top:1.4rem; right:1.8rem; background:none; border:none; color:#fff; font-size:2rem; cursor:pointer; }
 
+/* ── NOTES POPUP ── */
+.rt-notes-btn { background:none; border:1.5px solid #e0dbd2; border-radius:5px; padding:0.3rem 0.55rem; cursor:pointer; font-size:1.05rem; transition:background 0.2s,border-color 0.2s; position:relative; }
+.rt-notes-btn:hover { background:#f5f0e8; border-color:var(--creator-accent); }
+.rt-notes-btn.has-notes { border-color:var(--creator-accent); background:#eef2f8; }
+.note-dot { position:absolute; top:-3px; right:-3px; width:8px; height:8px; background:var(--rust); border-radius:50%; display:none; }
+.rt-notes-btn.has-notes .note-dot { display:block; }
+.notes-overlay { display:none; position:fixed; inset:0; background:rgba(10,8,5,0.72); z-index:700; align-items:center; justify-content:center; }
+.notes-overlay.open { display:flex; }
+.notes-modal { background:var(--warm-white); border-radius:12px; padding:1.5rem; width:100%; max-width:400px; margin:1rem; animation:slideUp 0.22s ease; }
+.notes-modal h3 { font-family:'Playfair Display',serif; font-size:1.1rem; margin-bottom:0.75rem; }
+.notes-modal-ta { width:100%; border:1.5px solid #e0dbd2; border-radius:7px; padding:0.65rem 0.8rem; font-family:'DM Sans',sans-serif; font-size:0.9rem; resize:vertical; min-height:120px; outline:none; transition:border-color 0.2s; background:#fff; color:var(--ink); }
+.notes-modal-ta:focus { border-color:var(--creator-accent); }
+.notes-modal-actions { display:flex; gap:0.6rem; margin-top:0.85rem; justify-content:flex-end; }
+.notes-save-btn { background:var(--creator-accent); color:#fff; border:none; border-radius:6px; padding:0.5rem 1.2rem; font-family:'DM Sans',sans-serif; font-size:0.87rem; font-weight:500; cursor:pointer; }
+.notes-save-btn:hover { background:#1e3560; }
+.notes-cancel-btn { background:#ece8e0; color:#555; border:none; border-radius:6px; padding:0.5rem 1rem; font-family:'DM Sans',sans-serif; font-size:0.87rem; cursor:pointer; }
+
+/* ── CUSTOMERS TAB ── */
+.customer-card { background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.07); margin-bottom:1.2rem; overflow:hidden; }
+.customer-card-header { background:var(--ink); color:var(--cream); padding:0.85rem 1.2rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; }
+.customer-name { font-family:'Playfair Display',serif; font-size:1.1rem; }
+.customer-meta { font-size:0.78rem; color:var(--sand); display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.2rem; }
+.customer-stat { background:rgba(255,255,255,0.12); border-radius:4px; padding:0.18rem 0.55rem; font-size:0.72rem; }
+.customer-rental-row { display:grid; grid-template-columns:1.5fr 1fr 0.8fr auto; gap:0.6rem; padding:0.7rem 1.2rem; border-bottom:1px solid #f0ece4; align-items:center; }
+.customer-rental-row:last-child { border-bottom:none; }
+.cr-item { font-size:0.87rem; font-weight:500; color:var(--ink); }
+.cr-dates { font-size:0.78rem; color:#777; }
+.cr-amt { font-size:0.85rem; color:var(--rust); font-weight:600; }
+.customer-new-btn { background:var(--creator-accent); color:#fff; border:none; border-radius:4px; padding:0.28rem 0.65rem; font-size:0.74rem; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; white-space:nowrap; }
+.customer-new-btn:hover { background:#1e3560; }
+.new-rental-form { display:none; padding:1rem 1.2rem; background:#f5f0e8; border-top:1px solid #e5e0d8; }
+.new-rental-form.open { display:block; }
+.nrf-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.65rem; margin-bottom:0.7rem; }
+.nrf-field { display:flex; flex-direction:column; gap:0.18rem; font-size:0.72rem; color:#888; text-transform:uppercase; letter-spacing:0.07em; }
+.nrf-field select, .nrf-field input { border:1.5px solid #ddd8d0; border-radius:5px; padding:0.42rem 0.55rem; font-family:'DM Sans',sans-serif; font-size:0.85rem; outline:none; background:#fff; transition:border-color 0.2s; }
+.nrf-field select:focus, .nrf-field input:focus { border-color:var(--creator-accent); }
+.nrf-submit { background:var(--avail); color:#fff; border:none; border-radius:6px; padding:0.48rem 1.1rem; font-family:'DM Sans',sans-serif; font-size:0.86rem; font-weight:500; cursor:pointer; }
+
+/* ── EXPORT ── */
+.export-btn { background:none; border:1.5px solid #b8c8e0; border-radius:4px; padding:0.3rem 0.8rem; font-size:0.78rem; color:var(--creator-accent); cursor:pointer; font-family:'DM Sans',sans-serif; font-weight:500; transition:all 0.2s; display:inline-flex; align-items:center; gap:0.35rem; }
+.export-btn:hover { background:var(--creator-accent); color:#fff; border-color:var(--creator-accent); }
+
 /* ── VIDEO SECTION ── */
 .video-section { max-width:1300px; margin:0 auto 2rem; padding:0 2rem; }
 .video-section.creator-only { display:none; }
@@ -471,6 +513,9 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
     <button class="tab-btn" id="tab-rentals-btn" onclick="switchTab('rentals')">
       Current Rentals <span class="inq-badge" id="rentals-count-badge" style="background:#3a7d44">0</span>
     </button>
+    <button class="tab-btn" id="tab-customers-btn" onclick="switchTab('customers')">
+      Customers
+    </button>
   </div>
 
   <!-- Inquiries tab: videos upload + pending inquiries + listings -->
@@ -502,8 +547,17 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
   <div class="tab-pane" id="tab-rentals">
     <div class="inq-panel-header">
       <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#3a7d44">Active &amp; Completed Rentals</div>
+      <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
     </div>
     <div id="rentals-container"><div class="rentals-empty">No accepted rentals yet — accept an inquiry to add a rental here.</div></div>
+  </div>
+
+  <!-- Customers tab -->
+  <div class="tab-pane" id="tab-customers">
+    <div class="inq-panel-header">
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--creator-accent)">Customers</div>
+    </div>
+    <div id="customers-container"><div class="inq-empty">No customer data yet — accepted rentals will appear here.</div></div>
   </div>
 </div>
 
@@ -520,6 +574,18 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
     </p>
   </div>
 </main>
+
+<!-- Notes popup modal -->
+<div class="notes-overlay" id="notes-overlay" onclick="closeNotesModal(event)">
+  <div class="notes-modal">
+    <h3 id="notes-modal-title">📋 Notes</h3>
+    <textarea class="notes-modal-ta" id="notes-modal-ta" placeholder="Add notes here…"></textarea>
+    <div class="notes-modal-actions">
+      <button class="notes-cancel-btn" onclick="closeNotesModal()">Cancel</button>
+      <button class="notes-save-btn" onclick="saveNotesModal()">Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- Password modal -->
 <div class="overlay" id="pw-overlay">
@@ -631,6 +697,8 @@ function applyMode(){
     renderInqPanel();
     renderRentalsTab();
     renderVideoGrid();
+    renderCustomersTab();
+    checkUpcomingReturns();
   } else {
     renderRenterVideos();
   }
@@ -1174,10 +1242,11 @@ function submitInq(id,btnEl){
 }
 
 function switchTab(tab){
-  document.getElementById('tab-inq').className='tab-pane'+(tab==='inq'?' active':'');
-  document.getElementById('tab-rentals').className='tab-pane'+(tab==='rentals'?' active':'');
-  document.getElementById('tab-inq-btn').className='tab-btn'+(tab==='inq'?' active':'');
-  document.getElementById('tab-rentals-btn').className='tab-btn'+(tab==='rentals'?' active':'');
+  ['inq','rentals','customers'].forEach(t=>{
+    document.getElementById('tab-'+t).className='tab-pane'+(tab===t?' active':'');
+    document.getElementById('tab-'+t+'-btn').className='tab-btn'+(tab===t?' active':'');
+  });
+  if(tab==='customers') renderCustomersTab();
 }
 
 function acceptInquiry(inqId){
@@ -1231,6 +1300,7 @@ function acceptInquiry(inqId){
 
   renderInqPanel();
   renderRentalsTab();
+  renderCustomersTab();
   saveData();
   const calPopup=document.querySelector('#grid #card-'+inq.itemId+' .cal-popup');
   if(calPopup&&calPopup.classList.contains('open')) drawCal(inq.itemId, true, calPopup);
@@ -1556,7 +1626,7 @@ function buildRentalTable(list, isCompletedTable){
     <th style="width:90px">Amt Paid</th>
     <th style="width:80px">Balance</th>
     <th style="width:110px">Status</th>
-    <th>Notes</th>
+    <th style="width:44px;text-align:center" title="Notes">📋</th>
     <th style="width:55px;text-align:right">✏️</th>
   </tr></thead>`;
   const tbody=document.createElement('tbody');
@@ -1677,16 +1747,14 @@ function buildRentalTable(list, isCompletedTable){
     chkWrap.appendChild(mkChk('Dropped off','droppedOff',r.droppedOff));
     tdStatus.appendChild(chkWrap);
 
-    // ── Notes cell — auto-expanding textarea always visible
-    const tdNotes=document.createElement('td');
-    const notesTA=document.createElement('textarea'); notesTA.className='rt-notes-input';
-    notesTA.placeholder='Notes…'; notesTA.value=r.notes||'';
-    notesTA.style.height='auto';
-    notesTA.oninput=()=>{ notesTA.style.height='auto'; notesTA.style.height=notesTA.scrollHeight+'px'; };
-    notesTA.onchange=()=>{ updateRental(r.id,'notes',notesTA.value); };
-    // Set initial height after appending
-    setTimeout(()=>{ notesTA.style.height='auto'; notesTA.style.height=notesTA.scrollHeight+'px'; },0);
-    tdNotes.appendChild(notesTA);
+    // ── Notes cell — icon button opens popup
+    const tdNotes=document.createElement('td'); tdNotes.style.textAlign='center';
+    const notesBtn=document.createElement('button');
+    notesBtn.className='rt-notes-btn'+(r.notes?' has-notes':'');
+    notesBtn.innerHTML='📋<span class="note-dot"></span>';
+    notesBtn.title=r.notes?'View/edit notes':'Add notes';
+    notesBtn.onclick=()=>openNotesModal(r.id, r.renterName||r.itemName);
+    tdNotes.appendChild(notesBtn);
 
     // ── Edit / Remove cell
     const tdActions=document.createElement('td'); tdActions.style.textAlign='right'; tdActions.style.verticalAlign='top';
@@ -1834,6 +1902,219 @@ function getPendingKeys(itemId){
     }
   });
   return keys;
+}
+
+/* ═══════════════════════════
+   NOTES MODAL
+═══════════════════════════ */
+let _notesRentalId = null;
+
+function openNotesModal(rentalId, label){
+  const r=rentals.find(x=>x.id===rentalId); if(!r) return;
+  _notesRentalId=rentalId;
+  document.getElementById('notes-modal-title').textContent='📋 Notes — '+esc(label||'');
+  document.getElementById('notes-modal-ta').value=r.notes||'';
+  document.getElementById('notes-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('notes-modal-ta').focus(),80);
+}
+function closeNotesModal(e){
+  if(!e||e.target===document.getElementById('notes-overlay')||e.currentTarget.classList.contains('notes-cancel-btn')||e.currentTarget.classList.contains('notes-overlay')){
+    document.getElementById('notes-overlay').classList.remove('open');
+    _notesRentalId=null;
+  }
+}
+function saveNotesModal(){
+  if(!_notesRentalId) return;
+  const val=document.getElementById('notes-modal-ta').value;
+  updateRental(_notesRentalId,'notes',val);
+  document.getElementById('notes-overlay').classList.remove('open');
+  _notesRentalId=null;
+}
+
+/* ═══════════════════════════
+   CUSTOMERS TAB
+═══════════════════════════ */
+function renderCustomersTab(){
+  const container=document.getElementById('customers-container');
+  if(!rentals.length){ container.innerHTML='<div class="inq-empty">No customer data yet.</div>'; return; }
+
+  // Group by phone number (most reliable unique key)
+  const customerMap={};
+  rentals.forEach(r=>{
+    const key=(r.phone||'').replace(/\D/g,'')||r.renterName||'unknown';
+    if(!customerMap[key]){
+      customerMap[key]={
+        name:r.renterName||'Unknown',
+        phone:r.phone||'',
+        email:r.email||'',
+        rentals:[],
+        lastRentalTime: 0
+      };
+    }
+    customerMap[key].rentals.push(r);
+    // Track most recent rental by dateStart
+    const t=r.dateStart?new Date(r.dateStart).getTime():0;
+    if(t>customerMap[key].lastRentalTime) customerMap[key].lastRentalTime=t;
+  });
+
+  // Sort customers by most recent rental first
+  const customers=Object.values(customerMap).sort((a,b)=>b.lastRentalTime-a.lastRentalTime);
+
+  container.innerHTML='';
+  customers.forEach(c=>{
+    const card=mk('div','customer-card');
+
+    // Header
+    const hdr=mk('div','customer-card-header');
+    const left=mk('div');
+    const nameEl=mk('div','customer-name'); nameEl.textContent=c.name;
+    const meta=mk('div','customer-meta');
+    if(c.phone) meta.innerHTML+=`<span>📞 ${esc(c.phone)}</span>`;
+    if(c.email) meta.innerHTML+=`<span>✉️ ${esc(c.email)}</span>`;
+    left.appendChild(nameEl); left.appendChild(meta);
+
+    const right=mk('div'); right.style.cssText='display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap';
+    const totalPaid=c.rentals.reduce((s,r)=>s+(parseFloat(r.amtPaid)||0),0);
+    const statEl=mk('span','customer-stat'); statEl.textContent=`${c.rentals.length} rental${c.rentals.length!==1?'s':''}`;
+    const paidEl=mk('span','customer-stat'); paidEl.textContent=`$${totalPaid.toFixed(2)} total paid`;
+
+    // New rental button
+    const newBtn=mk('button','customer-new-btn'); newBtn.textContent='+ New Rental';
+    newBtn.onclick=()=>{
+      const formEl=card.querySelector('.new-rental-form');
+      formEl.classList.toggle('open');
+    };
+    right.appendChild(statEl); right.appendChild(paidEl); right.appendChild(newBtn);
+    hdr.appendChild(left); hdr.appendChild(right);
+    card.appendChild(hdr);
+
+    // Rental rows — sorted by dateStart descending
+    const sorted=[...c.rentals].sort((a,b)=>new Date(b.dateStart||0)-new Date(a.dateStart||0));
+    sorted.forEach(r=>{
+      const row=mk('div','customer-rental-row');
+      const item=mk('div','cr-item'); item.textContent=r.itemName||'—';
+      const dates=mk('div','cr-dates'); dates.innerHTML=(r.dates||'—').replace(' – ','<br>');
+      const paid=parseFloat(r.amtPaid)||0;
+      const owed=parseFloat(r.totalOwed)||0;
+      const bal=owed-paid;
+      const amt=mk('div','cr-amt');
+      amt.innerHTML=`$${paid.toFixed(2)} paid${bal>0?` <span style="color:#888;font-weight:400;font-size:0.75rem">($${bal.toFixed(2)} due)</span>`:'<span style="color:var(--avail);font-size:0.75rem"> ✓</span>'}`;
+      const statusDot=mk('div');
+      statusDot.style.cssText='font-size:0.72rem;text-align:right;';
+      statusDot.innerHTML=r.droppedOff?'<span style="color:var(--avail)">✓ Completed</span>':r.pickedUp?'<span style="color:var(--partial)">⏳ Out</span>':'<span style="color:#aaa">Pending</span>';
+      row.appendChild(item); row.appendChild(dates); row.appendChild(amt); row.appendChild(statusDot);
+      card.appendChild(row);
+    });
+
+    // New rental quick-add form
+    const nrf=mk('div','new-rental-form');
+    nrf.innerHTML=`
+      <div style="font-size:0.8rem;font-weight:500;color:var(--creator-accent);margin-bottom:0.6rem">Create new rental for ${esc(c.name)}</div>
+      <div class="nrf-grid">
+        <div class="nrf-field">Item
+          <select id="nrf-item-${c.phone}">
+            ${items.map(it=>`<option value="${it.id}">${esc(it.name||'Unnamed')}</option>`).join('')}
+          </select>
+        </div>
+        <div class="nrf-field">Total Owed ($)
+          <input type="number" id="nrf-owed-${c.phone}" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="nrf-field">Start Date
+          <input type="date" id="nrf-start-${c.phone}">
+        </div>
+        <div class="nrf-field">End Date
+          <input type="date" id="nrf-end-${c.phone}">
+        </div>
+      </div>
+      <button class="nrf-submit" onclick="createQuickRental('${c.phone}','${esc(c.name)}','${esc(c.phone)}','${esc(c.email)}',this)">Add Rental</button>
+    `;
+    card.appendChild(nrf);
+    container.appendChild(card);
+  });
+}
+
+function createQuickRental(key, name, phone, email, btn){
+  const itemSel=document.getElementById('nrf-item-'+key);
+  const owedInp=document.getElementById('nrf-owed-'+key);
+  const startInp=document.getElementById('nrf-start-'+key);
+  const endInp=document.getElementById('nrf-end-'+key);
+  const itemId=itemSel?itemSel.value:'';
+  const item=items.find(i=>i.id===itemId);
+  if(!itemId||!startInp.value||!endInp.value){ alert('Please select an item and dates.'); return; }
+
+  const dateStart=new Date(startInp.value+'T00:00:00');
+  const dateEnd=new Date(endInp.value+'T00:00:00');
+  if(dateEnd<dateStart){ alert('End date must be after start date.'); return; }
+
+  // Build ownedDays and block calendar
+  const ownedDays={};
+  if(!calSt[itemId]) calSt[itemId]={year:dateStart.getFullYear(),month:dateStart.getMonth(),blocked:{}};
+  if(!calSt[itemId].blocked) calSt[itemId].blocked={};
+  const cur=new Date(dateStart); cur.setHours(0,0,0,0);
+  const end=new Date(dateEnd);   end.setHours(0,0,0,0);
+  while(cur<=end){
+    const k=`${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`;
+    ownedDays[k]=true; calSt[itemId].blocked[k]=true;
+    cur.setDate(cur.getDate()+1);
+  }
+
+  const days=Object.keys(ownedDays).length;
+  const fmtD=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const cost=parseFloat(owedInp&&owedInp.value)||calcEstimate(days,item)||0;
+
+  rentals.push({
+    id:uid(), itemId, itemName:item?item.name||'Unnamed':'Unknown',
+    renterName:name, phone, email, dates:`${fmtD(dateStart)} – ${fmtD(dateEnd)} (${days} day${days!==1?'s':''})`,
+    dateStart, dateEnd, ownedDays,
+    totalOwed:cost, amtPaid:0, pickedUp:false, droppedOff:false, notes:''
+  });
+
+  saveData();
+  renderRentalsTab();
+  renderCustomersTab();
+  btn.closest('.new-rental-form').classList.remove('open');
+}
+
+/* ═══════════════════════════
+   CSV EXPORT
+═══════════════════════════ */
+function exportCSV(){
+  const headers=['Renter','Phone','Email','Item','Dates','Total Owed','Amount Paid','Balance','Picked Up','Dropped Off','Notes'];
+  const rows=rentals.map(r=>{
+    const paid=parseFloat(r.amtPaid)||0;
+    const owed=parseFloat(r.totalOwed)||0;
+    const row=[r.renterName,r.phone,r.email,r.itemName,r.dates,owed.toFixed(2),paid.toFixed(2),(owed-paid).toFixed(2),r.pickedUp?'Yes':'No',r.droppedOff?'Yes':'No',r.notes||''];
+    return row.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',');
+  });
+  const csv=[headers.join(','),...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`scoot-your-boot-rentals-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+/* ═══════════════════════════
+   3-DAY REMINDER CHECK
+   Runs on page load — shows
+   an alert for any rental due
+   in exactly 3 days
+═══════════════════════════ */
+function checkUpcomingReturns(){
+  if(!isCreator) return;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const in3=new Date(today); in3.setDate(today.getDate()+3);
+  const due=rentals.filter(r=>{
+    if(r.droppedOff) return false;
+    if(!r.dateEnd) return false;
+    const end=new Date(r.dateEnd); end.setHours(0,0,0,0);
+    return end.getTime()===in3.getTime();
+  });
+  if(due.length){
+    const names=due.map(r=>`• ${r.renterName} — ${r.itemName}`).join('\n');
+    setTimeout(()=>{
+      alert(`⏰ Return Reminder\n\nThe following rental${due.length>1?'s are':'is'} due back in 3 days:\n\n${names}\n\nConsider reaching out to confirm the return.`);
+    }, 1500);
+  }
 }
 
 /* ═══════════════════════════
