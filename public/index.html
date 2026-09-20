@@ -710,11 +710,8 @@ function applyMode(){
     renderCustomersTab();
     checkUpcomingReturns();
     updateBadges();
-    // Populate global terms textarea
-    setTimeout(()=>{
-      const gt=document.getElementById('global-terms');
-      if(gt) gt.value=window.globalTerms||'';
-    },0);
+    // Populate global terms textarea — run after render() so DOM element exists
+    setTimeout(populateGlobalTerms, 50);
   } else {
     renderRenterVideos();
   }
@@ -1259,8 +1256,14 @@ function submitInq(id,btnEl){
 }
 
 function saveGlobalTerms(){
-  window.globalTerms=document.getElementById('global-terms').value;
+  const ta=document.getElementById('global-terms');
+  if(ta) window.globalTerms=ta.value;
   saveData();
+}
+
+function populateGlobalTerms(){
+  const ta=document.getElementById('global-terms');
+  if(ta && ta.value !== window.globalTerms) ta.value=window.globalTerms||'';
 }
 
 function updateBadges(){
@@ -1280,6 +1283,7 @@ function switchTab(tab){
     document.getElementById('tab-'+t+'-btn').className='tab-btn'+(tab===t?' active':'');
   });
   if(tab==='customers') renderCustomersTab();
+  if(tab==='inq') setTimeout(populateGlobalTerms, 50);
 }
 
 function acceptInquiry(inqId){
