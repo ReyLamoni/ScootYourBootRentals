@@ -1269,11 +1269,12 @@ function updateBadges(){
   const el1=document.getElementById('inq-count-badge');
   const el2=document.getElementById('inq-count-badge2');
   const el3=document.getElementById('rentals-count-badge');
-  const el4=document.getElementById('inq-count-badge');
   if(el1) el1.textContent=items.length;
   if(el2) el2.textContent=pending;
   if(el3) el3.textContent=active;
 }
+
+function switchTab(tab){
   ['inq','rentals','customers'].forEach(t=>{
     document.getElementById('tab-'+t).className='tab-pane'+(tab===t?' active':'');
     document.getElementById('tab-'+t+'-btn').className='tab-btn'+(tab===t?' active':'');
