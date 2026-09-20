@@ -76,11 +76,12 @@ app.get('/api/data', async (req, res) => {
     const store = await getStore();
     res.json({
       ok: true,
-      items:     store.items     || [],
-      calSt:     store.calSt     || {},
-      inquiries: store.inquiries || [],
-      rentals:   store.rentals   || [],
-      videos:    store.videos    || [],
+      items:       store.items       || [],
+      calSt:       store.calSt       || {},
+      inquiries:   store.inquiries   || [],
+      rentals:     store.rentals     || [],
+      videos:      store.videos      || [],
+      globalTerms: store.globalTerms || '',
     });
   } catch (err) {
     console.error('GET /api/data error:', err);
@@ -91,10 +92,10 @@ app.get('/api/data', async (req, res) => {
 // POST /api/data
 app.post('/api/data', async (req, res) => {
   try {
-    const { items, calSt, inquiries, rentals, videos } = req.body;
+    const { items, calSt, inquiries, rentals, videos, globalTerms } = req.body;
     await Store.findOneAndUpdate(
       { key: 'main' },
-      { $set: { items, calSt, inquiries, rentals, videos } },
+      { $set: { items, calSt, inquiries, rentals, videos, globalTerms } },
       { upsert: true, new: true }
     );
     res.json({ ok: true });
