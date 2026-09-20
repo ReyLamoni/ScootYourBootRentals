@@ -346,10 +346,10 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 .renter-video-card { background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.07); }
 .renter-video-card video { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; background:#1a1410; }
 .renter-video-label { padding:0.6rem 0.85rem; font-size:0.88rem; font-weight:500; color:var(--ink); }
-.admin-panel { max-width:1300px; margin:0 auto 2rem; padding:0 2rem; display:none; }
+.admin-panel { max-width:1300px; margin:0 auto 2rem; padding:0 1rem; display:none; }
 .admin-panel.on { display:block; }
-.tab-bar { display:flex; gap:0; border-bottom:2px solid #b8c8e0; margin-bottom:1.5rem; }
-.tab-btn { background:none; border:none; font-family:'DM Sans',sans-serif; font-size:0.9rem; font-weight:500; color:#888; padding:0.6rem 1.4rem 0.55rem; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:color 0.2s,border-color 0.2s; display:flex; align-items:center; gap:0.45rem; }
+.tab-bar { display:flex; gap:0; border-bottom:2px solid #b8c8e0; margin-bottom:1.5rem; flex-wrap:wrap; }
+.tab-btn { background:none; border:none; font-family:'DM Sans',sans-serif; font-size:0.82rem; font-weight:500; color:#888; padding:0.55rem 0.8rem 0.5rem; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:color 0.2s,border-color 0.2s; display:flex; align-items:center; gap:0.3rem; white-space:nowrap; }
 .tab-btn:hover { color:var(--creator-accent); }
 .tab-btn.active { color:var(--creator-accent); border-bottom-color:var(--creator-accent); }
 .tab-pane { display:none; }
@@ -383,7 +383,7 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 
 /* ── CURRENT RENTALS TABLE ── */
 .rentals-empty { text-align:center; padding:2rem; color:#bbb; font-size:0.9rem; border:1.5px dashed #ddd; border-radius:8px; }
-.rentals-table-wrap { overflow-x:auto; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.07); }
+.rentals-table-wrap { overflow-x:auto; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.07); -webkit-overflow-scrolling:touch; }
 .rentals-table { width:100%; border-collapse:collapse; background:#fff; font-size:0.85rem; }
 .rentals-table thead tr { background:var(--ink); color:var(--cream); }
 .rentals-table th { padding:0.75rem 1rem; text-align:left; font-weight:500; font-size:0.75rem; letter-spacing:0.07em; text-transform:uppercase; white-space:nowrap; }
@@ -508,32 +508,31 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 <div class="admin-panel" id="admin-panel">
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-inq-btn" onclick="switchTab('inq')">
-      Inquiries <span class="inq-badge" id="inq-count-badge">0</span>
+      Listings <span class="inq-badge" id="inq-count-badge" style="background:#888">0</span>
     </button>
     <button class="tab-btn" id="tab-rentals-btn" onclick="switchTab('rentals')">
-      Current Rentals <span class="inq-badge" id="rentals-count-badge" style="background:#3a7d44">0</span>
+      Inquiries &amp; Rentals <span class="inq-badge" id="rentals-count-badge" style="background:#3a7d44">0</span> <span class="inq-badge" id="inq-count-badge2" style="background:var(--creator-accent)">0</span>
     </button>
     <button class="tab-btn" id="tab-customers-btn" onclick="switchTab('customers')">
       Customers
     </button>
   </div>
 
-  <!-- Inquiries tab: videos upload + pending inquiries + listings -->
+  <!-- LISTINGS tab (was Inquiries) -->
   <div class="tab-pane active" id="tab-inq">
 
-    <!-- Video upload section -->
+    <!-- Instructional Videos -->
     <div class="video-sec-header">
       <div class="video-sec-title">📹 Instructional Videos</div>
       <button class="video-add-btn" onclick="addVideo()">+ Add Video</button>
     </div>
     <div class="video-grid" id="video-grid" style="margin-bottom:2rem"></div>
 
-    <!-- Pending inquiries -->
-    <div class="inq-panel-header" style="margin-top:1rem">
-      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--creator-accent)">Pending Inquiries</div>
-      <button class="inq-clear-btn" onclick="clearAllInq()">Clear all</button>
+    <!-- Global Rental Terms -->
+    <div style="margin-bottom:2rem">
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--creator-accent);border-bottom:2px solid #b8c8e0;padding-bottom:0.35rem;margin-bottom:0.75rem">📄 Rental Terms <span style="font-family:'DM Sans',sans-serif;font-size:0.75rem;color:#aaa;font-weight:400">(applies to all listings)</span></div>
+      <textarea id="global-terms" class="e-area" rows="4" placeholder="Enter your rental terms here — deposit required, pick-up/drop-off policy, minimum days, damage policy, etc. These terms will show on every listing." style="width:100%;max-width:800px" oninput="saveGlobalTerms()"></textarea>
     </div>
-    <div id="inq-list-container" style="margin-bottom:2rem"><div class="inq-empty">No inquiries yet — they'll appear here when renters submit requests.</div></div>
 
     <!-- Listings (editable) -->
     <div class="sec-header">
@@ -543,13 +542,23 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 
   </div>
 
-  <!-- Current Rentals tab: rentals management only -->
+  <!-- INQUIRIES & RENTALS tab (was Current Rentals) -->
   <div class="tab-pane" id="tab-rentals">
+
+    <!-- Pending Inquiries section -->
+    <div class="inq-panel-header" style="margin-bottom:0.75rem">
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--creator-accent)">Pending Inquiries</div>
+      <button class="inq-clear-btn" onclick="clearAllInq()">Clear all</button>
+    </div>
+    <div id="inq-list-container" style="margin-bottom:2rem"><div class="inq-empty">No inquiries yet — they'll appear here when renters submit requests.</div></div>
+
+    <!-- Active & Completed Rentals section -->
     <div class="inq-panel-header">
       <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#3a7d44">Active &amp; Completed Rentals</div>
       <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
     </div>
     <div id="rentals-container"><div class="rentals-empty">No accepted rentals yet — accept an inquiry to add a rental here.</div></div>
+
   </div>
 
   <!-- Customers tab -->
@@ -607,7 +616,7 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
   <div class="modal" style="max-width:320px;text-align:center">
     <div style="font-size:2.4rem;margin-bottom:0.7rem">📬</div>
     <h2 style="margin-bottom:0.4rem">Request Sent!</h2>
-    <p style="margin-bottom:1.3rem">Your inquiry has been submitted. The owner will be in touch soon. Same day rental requests will be avialable for pickup after 5pm</p>
+    <p style="margin-bottom:1.3rem">Your inquiry has been submitted. The owner will be in touch soon.</p>
     <button class="m-confirm" style="width:100%;padding:0.65rem;border-radius:6px;border:none;font-family:'DM Sans',sans-serif;font-size:0.92rem;font-weight:500;cursor:pointer" onclick="closeSentModal()">Done</button>
   </div>
 </div>
@@ -631,6 +640,7 @@ let rentals = [];
 let videos = []; // {id, title, src}
 let renterPick = {};
 let calSt = {};
+window.globalTerms = '';
 const DAYS=['Su','Mo','Tu','We','Th','Fr','Sa'];
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function uid(){return '_'+Math.random().toString(36).slice(2,9);}
@@ -699,6 +709,12 @@ function applyMode(){
     renderVideoGrid();
     renderCustomersTab();
     checkUpcomingReturns();
+    updateBadges();
+    // Populate global terms textarea
+    setTimeout(()=>{
+      const gt=document.getElementById('global-terms');
+      if(gt) gt.value=window.globalTerms||'';
+    },0);
   } else {
     renderRenterVideos();
   }
@@ -794,7 +810,6 @@ function creatorCard(item){
   const ni=mk('input'); ni.className='e-name'; ni.type='text'; ni.placeholder='Item name…'; ni.value=item.name||'';
   ni.oninput=()=>{item.name=ni.value;saveData();}; body.appendChild(ni);
   body.appendChild(taField('Description','What is it? Condition, size, features…',item,'desc'));
-  body.appendChild(taField('Rental Terms','Deposit, min days, pick-up only, etc…',item,'terms'));
 
   const pw=mk('div'); pw.innerHTML='<label class="flabel">Price</label>';
   const pr=mk('div','price-row'); pr.innerHTML='<span class="pfix">$</span>';
@@ -874,7 +889,9 @@ function renterCard(item){
   body.appendChild(inqBtnWrap);
 
   if(item.desc){ const dw=mk('div'); dw.innerHTML='<label class="flabel">About</label>'; const dp=mk('p','r-text'); dp.textContent=item.desc; dw.appendChild(dp); body.appendChild(dw); }
-  if(item.terms){ const tw=mk('div'); tw.innerHTML='<label class="flabel">Terms</label>'; const tp=mk('p','r-terms'); tp.textContent=item.terms; tw.appendChild(tp); body.appendChild(tw); }
+  // Show global rental terms (shared across all listings)
+  const globalTerms=(window.globalTerms||'').trim();
+  if(globalTerms){ const tw=mk('div'); tw.innerHTML='<label class="flabel">Rental Terms</label>'; const tp=mk('p','r-terms'); tp.textContent=globalTerms; tw.appendChild(tp); body.appendChild(tw); }
   if(item.contact){
     const cw=mk('div'); cw.innerHTML='<label class="flabel">Contact</label>';
     const isLink=item.contact.startsWith('http')||item.contact.startsWith('www');
@@ -1241,7 +1258,22 @@ function submitInq(id,btnEl){
   },600);
 }
 
-function switchTab(tab){
+function saveGlobalTerms(){
+  window.globalTerms=document.getElementById('global-terms').value;
+  saveData();
+}
+
+function updateBadges(){
+  const pending=inquiries.filter(i=>!i.accepted).length;
+  const active=rentals.filter(r=>!isCompleted(r)).length;
+  const el1=document.getElementById('inq-count-badge');
+  const el2=document.getElementById('inq-count-badge2');
+  const el3=document.getElementById('rentals-count-badge');
+  const el4=document.getElementById('inq-count-badge');
+  if(el1) el1.textContent=items.length;
+  if(el2) el2.textContent=pending;
+  if(el3) el3.textContent=active;
+}
   ['inq','rentals','customers'].forEach(t=>{
     document.getElementById('tab-'+t).className='tab-pane'+(tab===t?' active':'');
     document.getElementById('tab-'+t+'-btn').className='tab-btn'+(tab===t?' active':'');
@@ -2142,7 +2174,7 @@ function saveData() {
       await fetch('/api/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: safeItems, calSt, inquiries, rentals, videos: safeVideos })
+        body: JSON.stringify({ items: safeItems, calSt, inquiries, rentals, videos: safeVideos, globalTerms: window.globalTerms||'' })
       });
     } catch(e) { console.warn('Auto-save failed:', e); }
   }, 1500);
@@ -2158,6 +2190,7 @@ async function loadData() {
       inquiries = data.inquiries || [];
       rentals   = data.rentals   || [];
       videos    = data.videos    || [];
+      window.globalTerms = data.globalTerms || '';
       inquiries.forEach(inq => {
         if (inq.dateStart) inq.dateStart = new Date(inq.dateStart);
         if (inq.dateEnd)   inq.dateEnd   = new Date(inq.dateEnd);
