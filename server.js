@@ -29,6 +29,7 @@ const storeSchema = new mongoose.Schema({
   inquiries: { type: mongoose.Schema.Types.Mixed, default: [] },
   rentals:   { type: mongoose.Schema.Types.Mixed, default: [] },
   videos:    { type: mongoose.Schema.Types.Mixed, default: [] },
+  globalTerms: { type: String, default: '' },
 }, { timestamps: true });
 
 const Store = mongoose.model('Store', storeSchema);
