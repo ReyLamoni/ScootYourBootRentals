@@ -467,6 +467,14 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 <!-- Renter: instructional videos (shown when videos exist) -->
 <div class="renter-videos" id="renter-videos"></div>
 
+<!-- Renter: global rental terms block (shown when terms exist) -->
+<div id="renter-terms-block" style="display:none;max-width:1300px;margin:0 auto 1.5rem;padding:0 2rem">
+  <div style="background:#fff;border-radius:10px;border-left:4px solid var(--rust);padding:1rem 1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+    <div style="font-family:'Playfair Display',serif;font-size:1rem;margin-bottom:0.5rem;color:var(--ink)">📄 Rental Terms</div>
+    <p id="renter-terms-text" class="r-terms" style="white-space:pre-wrap;margin:0"></p>
+  </div>
+</div>
+
 <!-- ══ STATIC CONTENT for Google crawler ══
      Visible immediately before JS loads. Hidden by JS once app boots.
      This prevents the Soft 404 error from Google Search Console. -->
@@ -703,6 +711,7 @@ function applyMode(){
   document.getElementById('admin-panel').className='admin-panel'+(isCreator?' on':'');
   document.getElementById('renter-main').style.display=isCreator?'none':'';
   document.getElementById('renter-videos').style.display=isCreator?'none':'';
+  document.getElementById('renter-terms-block').style.display='none'; // renderRenterTerms will set correctly
   if(isCreator){
     renderInqPanel();
     renderRentalsTab();
@@ -714,6 +723,7 @@ function applyMode(){
     setTimeout(populateGlobalTerms, 50);
   } else {
     renderRenterVideos();
+    renderRenterTerms();
   }
   render();
 }
@@ -886,9 +896,6 @@ function renterCard(item){
   body.appendChild(inqBtnWrap);
 
   if(item.desc){ const dw=mk('div'); dw.innerHTML='<label class="flabel">About</label>'; const dp=mk('p','r-text'); dp.textContent=item.desc; dw.appendChild(dp); body.appendChild(dw); }
-  // Show global rental terms (shared across all listings)
-  const globalTerms=(window.globalTerms||'').trim();
-  if(globalTerms){ const tw=mk('div'); tw.innerHTML='<label class="flabel">Rental Terms</label>'; const tp=mk('p','r-terms'); tp.textContent=globalTerms; tw.appendChild(tp); body.appendChild(tw); }
   if(item.contact){
     const cw=mk('div'); cw.innerHTML='<label class="flabel">Contact</label>';
     const isLink=item.contact.startsWith('http')||item.contact.startsWith('www');
@@ -1258,6 +1265,7 @@ function submitInq(id,btnEl){
 function saveGlobalTerms(){
   const ta=document.getElementById('global-terms');
   if(ta) window.globalTerms=ta.value;
+  renderRenterTerms();
   saveData();
 }
 
@@ -1438,6 +1446,24 @@ function renderVideoGrid(){
     card.appendChild(body);
     grid.appendChild(card);
   });
+}
+
+function renderRenterTerms(){
+  const block=document.getElementById('renter-terms-block');
+  const textEl=document.getElementById('renter-terms-text');
+  if(!block||!textEl) return;
+  const terms=(window.globalTerms||'').trim();
+  if(terms && !isCreator){
+    textEl.textContent=terms;
+    block.style.display='block';
+  } else {
+    block.style.display='none';
+  }
+}
+
+function renderRenterTermsIfReady(){
+  // Safe to call at any time — respects creator/renter mode
+  if(!isCreator) renderRenterTerms();
 }
 
 function renderRenterVideos(){
@@ -2196,6 +2222,8 @@ async function loadData() {
       rentals   = data.rentals   || [];
       videos    = data.videos    || [];
       window.globalTerms = data.globalTerms || '';
+      // Update renter terms display with loaded data
+      renderRenterTerms();
       inquiries.forEach(inq => {
         if (inq.dateStart) inq.dateStart = new Date(inq.dateStart);
         if (inq.dateEnd)   inq.dateEnd   = new Date(inq.dateEnd);
