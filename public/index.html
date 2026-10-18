@@ -1363,16 +1363,34 @@ function populateOwnerEditor(){
   setOwnerPhotoPreview(d.photoSrc||'');
 }
 
-function handleOwnerPhoto(inp){
+async function handleOwnerPhoto(inp){
   const f=inp.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    window.ownerData={...window.ownerData, photoSrc:ev.target.result};
-    setOwnerPhotoPreview(ev.target.result);
-    renderRenterOwner();
-    saveData();
-  };
-  r.readAsDataURL(f);
+  // Show uploading state
+  const ph=document.getElementById('owner-photo-ph');
+  if(ph){ ph.textContent='⏳'; ph.style.display='block'; }
+  const preview=document.getElementById('owner-photo-preview');
+  if(preview) preview.style.display='none';
+  try {
+    const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=rej;r.readAsDataURL(f);});
+    const resp=await fetch('/api/upload-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:base64})});
+    const data=await resp.json();
+    if(data.ok){
+      // Delete old photo from Cloudinary if replacing
+      if(window.ownerData.photoPublicId){
+        fetch('/api/delete-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({publicId:window.ownerData.photoPublicId})}).catch(()=>{});
+      }
+      window.ownerData={...window.ownerData, photoSrc:data.url, photoPublicId:data.publicId};
+      setOwnerPhotoPreview(data.url);
+      renderRenterOwner();
+      saveData();
+    } else {
+      alert('Photo upload failed: '+data.error);
+      if(ph){ ph.textContent='📷'; ph.style.display='block'; }
+    }
+  } catch(err){
+    alert('Photo upload failed. Please try again.');
+    if(ph){ ph.textContent='📷'; ph.style.display='block'; }
+  }
 }
 
 function setOwnerPhotoPreview(src){
@@ -1435,7 +1453,7 @@ function switchTab(tab){
     document.getElementById('tab-'+t+'-btn').className='tab-btn'+(tab===t?' active':'');
   });
   if(tab==='customers') renderCustomersTab();
-  if(tab==='inq') setTimeout(populateGlobalTerms, 50);
+  if(tab==='inq'){ setTimeout(populateGlobalTerms, 50); setTimeout(populateOwnerEditor, 50); }
 }
 
 function acceptInquiry(inqId){
@@ -2349,7 +2367,14 @@ function saveData() {
       await fetch('/api/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: safeItems, calSt, inquiries, rentals, videos: safeVideos, globalTerms: window.globalTerms||'', ownerData: window.ownerData||{} })
+        body: JSON.stringify({ items: safeItems, calSt, inquiries, rentals, videos: safeVideos, globalTerms: window.globalTerms||'', ownerData: {
+          name: (window.ownerData||{}).name||'',
+          contact: (window.ownerData||{}).contact||'',
+          extra: (window.ownerData||{}).extra||'',
+          // Only save Cloudinary URLs, never base64
+          photoSrc: ((window.ownerData||{}).photoSrc||'').startsWith('http') ? window.ownerData.photoSrc : '',
+          photoPublicId: (window.ownerData||{}).photoPublicId||''
+        } })
       });
     } catch(e) { console.warn('Auto-save failed:', e); }
   }, 1500);
@@ -2368,6 +2393,7 @@ async function loadData() {
       window.globalTerms = data.globalTerms || '';
       window.ownerData   = data.ownerData   || { name:'', contact:'', extra:'', photoSrc:'' };
       renderRenterTerms();
+      renderRenterOwner();
       inquiries.forEach(inq => {
         if (inq.dateStart) inq.dateStart = new Date(inq.dateStart);
         if (inq.dateEnd)   inq.dateEnd   = new Date(inq.dateEnd);
