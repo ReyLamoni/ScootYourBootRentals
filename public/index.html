@@ -275,7 +275,35 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 .lightbox img { max-width:90vw; max-height:85vh; border-radius:8px; }
 .lb-close { position:absolute; top:1.4rem; right:1.8rem; background:none; border:none; color:#fff; font-size:2rem; cursor:pointer; }
 
-/* ── NOTES POPUP ── */
+/* ── MEET THE OWNER ── */
+.info-boxes-row { display:flex; gap:1.5rem; margin-bottom:2rem; flex-wrap:wrap; }
+.info-box { flex:1; min-width:260px; }
+.info-box-title { font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--creator-accent); border-bottom:2px solid #b8c8e0; padding-bottom:0.35rem; margin-bottom:0.75rem; }
+.owner-editor { background:#fff; border-radius:10px; padding:1rem 1.1rem; box-shadow:0 2px 8px rgba(0,0,0,0.06); display:flex; flex-direction:column; gap:0.65rem; }
+.owner-top-row { display:flex; gap:1rem; align-items:flex-start; }
+.owner-photo-wrap { flex-shrink:0; width:80px; height:80px; border-radius:8px; background:#e8e2d8; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1.5px solid #e0dbd2; transition:background 0.2s; }
+.owner-photo-wrap:hover { background:#ddd8cf; }
+.owner-photo-wrap img { width:100%; height:100%; object-fit:cover; }
+.owner-photo-placeholder { font-size:1.5rem; opacity:0.4; }
+.owner-fields { flex:1; display:flex; flex-direction:column; gap:0.5rem; }
+.owner-name-inp { font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; border:none; border-bottom:1.5px solid #e0dbd2; background:transparent; width:100%; outline:none; color:var(--ink); padding-bottom:2px; transition:border-color 0.2s; }
+.owner-name-inp:focus { border-bottom-color:var(--creator-accent); }
+.owner-name-inp::placeholder { font-family:'DM Sans',sans-serif; font-weight:400; font-size:0.88rem; color:#bbb; }
+.owner-ta { width:100%; border:1.5px solid #e0dbd2; border-radius:6px; padding:0.45rem 0.6rem; font-family:'DM Sans',sans-serif; font-size:0.85rem; color:var(--ink); resize:vertical; outline:none; background:var(--warm-white); transition:border-color 0.2s; min-height:52px; }
+.owner-ta:focus { border-color:var(--creator-accent); }
+
+/* Renter side Meet the Owner card */
+.renter-owner-card { background:#fff; border-radius:10px; border-left:4px solid var(--rust); padding:1rem 1.25rem; box-shadow:0 2px 8px rgba(0,0,0,0.06); display:flex; gap:1rem; align-items:flex-start; }
+.renter-owner-photo { width:72px; height:72px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+.renter-owner-info { flex:1; }
+.renter-owner-name { font-family:'Playfair Display',serif; font-size:1.05rem; font-weight:700; color:var(--ink); margin-bottom:0.3rem; }
+.renter-owner-contact { font-size:0.84rem; color:#555; white-space:pre-wrap; margin-bottom:0.3rem; }
+.renter-owner-extra { font-size:0.82rem; color:#777; font-style:italic; white-space:pre-wrap; }
+
+/* Renter info row (terms + owner side by side) */
+.renter-info-row { max-width:1300px; margin:0 auto 1.5rem; padding:0 2rem; display:none; gap:1.25rem; flex-wrap:wrap; }
+.renter-info-row.has-content { display:flex; }
+.renter-info-row > div { flex:1; min-width:240px; }
 .rt-notes-btn { background:none; border:1.5px solid #e0dbd2; border-radius:5px; padding:0.3rem 0.55rem; cursor:pointer; font-size:1.05rem; transition:background 0.2s,border-color 0.2s; position:relative; }
 .rt-notes-btn:hover { background:#f5f0e8; border-color:var(--creator-accent); }
 .rt-notes-btn.has-notes { border-color:var(--creator-accent); background:#eef2f8; }
@@ -467,11 +495,25 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
 <!-- Renter: instructional videos (shown when videos exist) -->
 <div class="renter-videos" id="renter-videos"></div>
 
-<!-- Renter: global rental terms block (shown when terms exist) -->
-<div id="renter-terms-block" style="display:none;max-width:1300px;margin:0 auto 1.5rem;padding:0 2rem">
-  <div style="background:#fff;border-radius:10px;border-left:4px solid var(--rust);padding:1rem 1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
-    <div style="font-family:'Playfair Display',serif;font-size:1rem;margin-bottom:0.5rem;color:var(--ink)">📄 Rental Terms</div>
-    <p id="renter-terms-text" class="r-terms" style="white-space:pre-wrap;margin:0"></p>
+<!-- Renter: Terms + Meet the Owner — side by side, wraps on small screens -->
+<div class="renter-info-row" id="renter-info-row">
+  <!-- Rental Terms -->
+  <div id="renter-terms-block">
+    <div style="background:#fff;border-radius:10px;border-left:4px solid var(--rust);padding:1rem 1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.06);height:100%">
+      <div style="font-family:'Playfair Display',serif;font-size:1rem;margin-bottom:0.5rem;color:var(--ink)">📄 Rental Terms</div>
+      <p id="renter-terms-text" class="r-terms" style="white-space:pre-wrap;margin:0"></p>
+    </div>
+  </div>
+  <!-- Meet the Owner -->
+  <div id="renter-owner-block">
+    <div class="renter-owner-card">
+      <img id="renter-owner-photo" class="renter-owner-photo" src="" alt="Owner photo" style="display:none">
+      <div class="renter-owner-info">
+        <div class="renter-owner-name" id="renter-owner-name"></div>
+        <div class="renter-owner-contact" id="renter-owner-contact"></div>
+        <div class="renter-owner-extra" id="renter-owner-extra"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -536,10 +578,40 @@ main { max-width:1300px; margin:0 auto; padding:2.5rem 2rem; }
     </div>
     <div class="video-grid" id="video-grid" style="margin-bottom:2rem"></div>
 
-    <!-- Global Rental Terms -->
-    <div style="margin-bottom:2rem">
-      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--creator-accent);border-bottom:2px solid #b8c8e0;padding-bottom:0.35rem;margin-bottom:0.75rem">📄 Rental Terms <span style="font-family:'DM Sans',sans-serif;font-size:0.75rem;color:#aaa;font-weight:400">(applies to all listings)</span></div>
-      <textarea id="global-terms" class="e-area" rows="4" placeholder="Enter your rental terms here — deposit required, pick-up/drop-off policy, minimum days, damage policy, etc. These terms will show on every listing." style="width:100%;max-width:800px" oninput="saveGlobalTerms()"></textarea>
+    <!-- Global Rental Terms + Meet the Owner — side by side, wrap on small screens -->
+    <div style="display:flex;gap:1.25rem;flex-wrap:wrap;margin-bottom:2rem;">
+
+      <!-- Rental Terms -->
+      <div class="info-box">
+        <div class="info-box-title">📄 Rental Terms <span style="font-family:'DM Sans',sans-serif;font-size:0.72rem;color:#aaa;font-weight:400">(applies to all listings)</span></div>
+        <textarea id="global-terms" class="e-area" rows="5" placeholder="Enter your rental terms here — deposit required, pick-up/drop-off policy, minimum days, damage policy, etc." style="width:100%" oninput="saveGlobalTerms()"></textarea>
+      </div>
+
+      <!-- Meet the Owner -->
+      <div class="info-box">
+        <div class="info-box-title">👤 Meet the Owner</div>
+        <div class="owner-editor">
+          <div class="owner-top-row">
+            <!-- Photo upload -->
+            <div class="owner-photo-wrap" id="owner-photo-wrap" onclick="document.getElementById('owner-photo-input').click()" title="Click to upload photo">
+              <img id="owner-photo-preview" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:6px">
+              <span class="owner-photo-placeholder" id="owner-photo-ph">📷</span>
+            </div>
+            <input type="file" id="owner-photo-input" accept="image/*" style="display:none" onchange="handleOwnerPhoto(this)">
+            <!-- Name field -->
+            <div class="owner-fields">
+              <input class="owner-name-inp" id="owner-name" type="text" placeholder="Owner name…" oninput="saveOwnerData()">
+              <label class="flabel" style="margin-top:0.2rem">Contact Info</label>
+              <textarea class="owner-ta" id="owner-contact" rows="2" placeholder="Phone, email, or preferred contact…" oninput="saveOwnerData()"></textarea>
+            </div>
+          </div>
+          <div>
+            <label class="flabel">Extra Info <span style="color:#bbb;font-size:0.65rem">(optional)</span></label>
+            <textarea class="owner-ta" id="owner-extra" rows="2" placeholder="A little about yourself, availability, anything else renters should know…" oninput="saveOwnerData()"></textarea>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Listings (editable) -->
@@ -649,6 +721,7 @@ let videos = []; // {id, title, src}
 let renterPick = {};
 let calSt = {};
 window.globalTerms = '';
+window.ownerData = { name:'', contact:'', extra:'', photoSrc:'' };
 const DAYS=['Su','Mo','Tu','We','Th','Fr','Sa'];
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function uid(){return '_'+Math.random().toString(36).slice(2,9);}
@@ -721,9 +794,11 @@ function applyMode(){
     updateBadges();
     // Populate global terms textarea — run after render() so DOM element exists
     setTimeout(populateGlobalTerms, 50);
+    setTimeout(populateOwnerEditor, 50);
   } else {
     renderRenterVideos();
     renderRenterTerms();
+    renderRenterOwner();
   }
   render();
 }
@@ -1267,6 +1342,75 @@ function saveGlobalTerms(){
   if(ta) window.globalTerms=ta.value;
   renderRenterTerms();
   saveData();
+}
+
+function saveOwnerData(){
+  window.ownerData={
+    name: (document.getElementById('owner-name')||{}).value||'',
+    contact: (document.getElementById('owner-contact')||{}).value||'',
+    extra: (document.getElementById('owner-extra')||{}).value||'',
+    photoSrc: window.ownerData.photoSrc||''
+  };
+  renderRenterOwner();
+  saveData();
+}
+
+function populateOwnerEditor(){
+  const d=window.ownerData||{};
+  const n=document.getElementById('owner-name'); if(n) n.value=d.name||'';
+  const c=document.getElementById('owner-contact'); if(c) c.value=d.contact||'';
+  const e=document.getElementById('owner-extra'); if(e) e.value=d.extra||'';
+  setOwnerPhotoPreview(d.photoSrc||'');
+}
+
+function handleOwnerPhoto(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    window.ownerData={...window.ownerData, photoSrc:ev.target.result};
+    setOwnerPhotoPreview(ev.target.result);
+    renderRenterOwner();
+    saveData();
+  };
+  r.readAsDataURL(f);
+}
+
+function setOwnerPhotoPreview(src){
+  const preview=document.getElementById('owner-photo-preview');
+  const ph=document.getElementById('owner-photo-ph');
+  if(!preview) return;
+  if(src){ preview.src=src; preview.style.display='block'; if(ph) ph.style.display='none'; }
+  else { preview.style.display='none'; if(ph) ph.style.display='block'; }
+}
+
+function renderRenterOwner(){
+  const d=window.ownerData||{};
+  const hasContent=d.name||d.contact||d.extra||d.photoSrc;
+  const block=document.getElementById('renter-owner-block');
+  if(block) block.style.display=(!isCreator&&hasContent)?'block':'none';
+  if(!hasContent) { updateRenterInfoRow(); return; }
+  const nameEl=document.getElementById('renter-owner-name');
+  const contactEl=document.getElementById('renter-owner-contact');
+  const extraEl=document.getElementById('renter-owner-extra');
+  const photoEl=document.getElementById('renter-owner-photo');
+  if(nameEl) nameEl.textContent=d.name||'';
+  if(contactEl){ contactEl.textContent=d.contact||''; contactEl.style.display=d.contact?'block':'none'; }
+  if(extraEl){ extraEl.textContent=d.extra||''; extraEl.style.display=d.extra?'block':'none'; }
+  if(photoEl){ if(d.photoSrc){photoEl.src=d.photoSrc;photoEl.style.display='block';}else{photoEl.style.display='none';} }
+  updateRenterInfoRow();
+}
+
+function updateRenterInfoRow(){
+  const row=document.getElementById('renter-info-row');
+  if(!row||isCreator) return;
+  const d=window.ownerData||{};
+  const hasOwner=!!(d.name||d.contact||d.extra||d.photoSrc);
+  const hasTerms=!!(window.globalTerms||'').trim();
+  const termsBlock=document.getElementById('renter-terms-block');
+  const ownerBlock=document.getElementById('renter-owner-block');
+  if(termsBlock) termsBlock.style.display=hasTerms?'block':'none';
+  if(ownerBlock) ownerBlock.style.display=hasOwner?'block':'none';
+  row.className='renter-info-row'+((hasTerms||hasOwner)?' has-content':'');
 }
 
 function populateGlobalTerms(){
@@ -2205,7 +2349,7 @@ function saveData() {
       await fetch('/api/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: safeItems, calSt, inquiries, rentals, videos: safeVideos, globalTerms: window.globalTerms||'' })
+        body: JSON.stringify({ items: safeItems, calSt, inquiries, rentals, videos: safeVideos, globalTerms: window.globalTerms||'', ownerData: window.ownerData||{} })
       });
     } catch(e) { console.warn('Auto-save failed:', e); }
   }, 1500);
@@ -2222,7 +2366,7 @@ async function loadData() {
       rentals   = data.rentals   || [];
       videos    = data.videos    || [];
       window.globalTerms = data.globalTerms || '';
-      // Update renter terms display with loaded data
+      window.ownerData   = data.ownerData   || { name:'', contact:'', extra:'', photoSrc:'' };
       renderRenterTerms();
       inquiries.forEach(inq => {
         if (inq.dateStart) inq.dateStart = new Date(inq.dateStart);
